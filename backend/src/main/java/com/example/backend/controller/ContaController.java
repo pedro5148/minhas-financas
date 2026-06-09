@@ -1,55 +1,71 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.ContaDTO;
+import com.example.backend.dto.ContaRequestDTO;
 import com.example.backend.model.Conta;
 import com.example.backend.repository.ContaRepository;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/contas")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ContaController {
 
     private final ContaRepository repository;
 
-    public ContaController(ContaRepository repository) {
-        this.repository = repository;
-    }
-
     @GetMapping
-    public List<Conta> listarTodos() {
-        return repository.findAll();
+    public List<ContaDTO> listarTodos() {
+        return repository.findAll().stream()
+                .map(ContaDTO::new)
+                .collect(Collectors.toList());
     }
 
     @PostMapping
-    public Conta criar(@RequestBody Conta conta) {
+    public ContaDTO criar(@Valid @RequestBody ContaRequestDTO dto) {
+        Conta conta = new Conta();
+        conta.setNome(dto.getNome());
+        conta.setSaldoInicial(dto.getSaldoInicial());
+        conta.setDataCriacao(dto.getDataCriacao());
+        conta.setPadrao(dto.isPadrao());
+
         if (conta.isPadrao()) {
             resetOutrasContasPadrao(null);
         }
-        return repository.save(conta);
+        return new ContaDTO(repository.save(conta));
     }
 
     @PutMapping("/{id}")
-    public Conta atualizar(@PathVariable Long id, @RequestBody Conta contaAtualizada) {
+    public ContaDTO atualizar(@PathVariable Long id, @Valid @RequestBody ContaRequestDTO dto) {
         return repository.findById(id)
                 .map(conta -> {
-                    conta.setNome(contaAtualizada.getNome());
-                    conta.setSaldoInicial(contaAtualizada.getSaldoInicial());
-                    conta.setPadrao(contaAtualizada.isPadrao());
+                    conta.setNome(dto.getNome());
+                    conta.setSaldoInicial(dto.getSaldoInicial());
+                    conta.setPadrao(dto.isPadrao());
                     
                     if (conta.isPadrao()) {
                         resetOutrasContasPadrao(conta.getId());
                     }
                     
-                    return repository.save(conta);
+                    return new ContaDTO(repository.save(conta));
                 })
                 .orElseGet(() -> {
-                    contaAtualizada.setId(id);
-                    if (contaAtualizada.isPadrao()) {
+                    Conta novaConta = new Conta();
+                    novaConta.setId(id);
+                    novaConta.setNome(dto.getNome());
+                    novaConta.setSaldoInicial(dto.getSaldoInicial());
+                    novaConta.setDataCriacao(dto.getDataCriacao());
+                    novaConta.setPadrao(dto.isPadrao());
+
+                    if (novaConta.isPadrao()) {
                         resetOutrasContasPadrao(id);
                     }
-                    return repository.save(contaAtualizada);
+                    return new ContaDTO(repository.save(novaConta));
                 });
     }
 

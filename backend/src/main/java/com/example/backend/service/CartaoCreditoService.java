@@ -2,18 +2,16 @@ package com.example.backend.service;
 
 import com.example.backend.model.CartaoCredito;
 import com.example.backend.repository.CartaoCreditoRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CartaoCreditoService {
 
     private final CartaoCreditoRepository repository;
-
-    public CartaoCreditoService(CartaoCreditoRepository repository) {
-        this.repository = repository;
-    }
 
     public List<CartaoCredito> listarTodos() {
         return repository.findAll();

@@ -5,6 +5,7 @@ import com.example.backend.enums.TipoRecorrencia;
 import com.example.backend.model.Fatura;
 import com.example.backend.model.Lancamento;
 import com.example.backend.repository.LancamentoRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class LancamentoService {
 
     private final LancamentoRepository repository;
     private final FaturaService faturaService;
-
-    public LancamentoService(LancamentoRepository repository, FaturaService faturaService) {
-        this.repository = repository;
-        this.faturaService = faturaService;
-    }
 
     @Transactional
     public List<Lancamento> criarLancamentos(Lancamento lancamentoBase) {
