@@ -10,6 +10,7 @@ import com.example.backend.model.Lancamento;
 import com.example.backend.repository.CartaoCreditoRepository;
 import com.example.backend.repository.FaturaRepository;
 import com.example.backend.repository.LancamentoRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

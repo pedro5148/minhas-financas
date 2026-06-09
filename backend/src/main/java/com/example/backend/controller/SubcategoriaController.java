@@ -1,62 +1,68 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.SubcategoriaDTO;
 import com.example.backend.dto.SubcategoriaRequestDTO;
 import com.example.backend.model.Categoria;
 import com.example.backend.model.Subcategoria;
 import com.example.backend.repository.CategoriaRepository;
 import com.example.backend.repository.LancamentoRepository;
 import com.example.backend.repository.SubcategoriaRepository;
+import jakarta.validation.Valid;
+import com.example.backend.exception.BusinessException;
+import com.example.backend.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/subcategorias")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class SubcategoriaController {
 
     private final SubcategoriaRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final LancamentoRepository lancamentoRepository;
 
-    public SubcategoriaController(SubcategoriaRepository repository, CategoriaRepository categoriaRepository, LancamentoRepository lancamentoRepository) {
-        this.repository = repository;
-        this.categoriaRepository = categoriaRepository;
-        this.lancamentoRepository = lancamentoRepository;
-    }
-
     @GetMapping
-    public List<Subcategoria> listarTodos() {
-        return repository.findAll();
+    public List<SubcategoriaDTO> listarTodos() {
+        return repository.findAll().stream()
+                .map(SubcategoriaDTO::new)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/categoria/{categoriaId}")
-    public ResponseEntity<List<Subcategoria>> listarPorCategoria(@PathVariable Long categoriaId) {
-        return ResponseEntity.ok(repository.findByCategoriaId(categoriaId));
+    public ResponseEntity<List<SubcategoriaDTO>> listarPorCategoria(@PathVariable Long categoriaId) {
+        List<SubcategoriaDTO> result = repository.findByCategoriaId(categoriaId).stream()
+                .map(SubcategoriaDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody SubcategoriaRequestDTO dto) {
-        return categoriaRepository.findById(dto.getCategoriaId())
-                .map(categoria -> {
-                    Subcategoria subcategoria = new Subcategoria();
-                    subcategoria.setNome(dto.getNome());
-                    subcategoria.setCategoria(categoria);
-                    return ResponseEntity.ok(repository.save(subcategoria));
-                }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<SubcategoriaDTO> criar(@Valid @RequestBody SubcategoriaRequestDTO dto) {
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada."));
+
+        Subcategoria subcategoria = new Subcategoria();
+        subcategoria.setNome(dto.getNome());
+        subcategoria.setCategoria(categoria);
+        Subcategoria subSalva = repository.save(subcategoria);
+        return ResponseEntity.ok(new SubcategoriaDTO(subSalva));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
         if (!repository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Subcategoria não encontrada.");
         }
 
         if (lancamentoRepository.existsBySubcategoriaId(id)) {
-             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Não é possível excluir: A subcategoria possui lançamentos vinculados.");
+             throw new BusinessException("Não é possível excluir: A subcategoria possui lançamentos vinculados.");
         }
 
         repository.deleteById(id);
