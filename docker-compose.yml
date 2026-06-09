@@ -1,0 +1,11 @@
+name: minhas_financas
+services:
+  frontend:
+    image: node:20-alpine
+    container_name: minhas_financas
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "4200:4200"
+    command: npm start

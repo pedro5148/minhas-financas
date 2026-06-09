@@ -1,0 +1,148 @@
+.fatura-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  
+  .header-info {
+    flex: 1;
+    
+    .cartao-nome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 4px;
+      
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+    
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+  }
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 16px;
+  
+  &.aberta {
+    background: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary-color);
+  }
+  
+  &.fechada {
+    background: rgba(var(--warn-rgb), 0.1);
+    color: var(--warn-color);
+  }
+  
+  &.paga {
+    background: rgba(var(--success-rgb), 0.1);
+    color: var(--success-color);
+  }
+}
+
+.fatura-resumo {
+  display: flex;
+  gap: 32px;
+  padding: 16px 0 24px;
+  
+  .resumo-item {
+    display: flex;
+    flex-direction: column;
+    
+    .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    
+    .valor {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+  }
+}
+
+.despesas-container {
+  padding: 24px 0;
+  
+  h3 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.despesas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.despesa-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: rgba(0,0,0,0.02);
+  }
+  
+  .despesa-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(var(--warn-rgb), 0.1);
+    color: var(--warn-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+  }
+  
+  .despesa-info {
+    flex: 1;
+    
+    .despesa-descricao {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .despesa-data {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  }
+  
+  .despesa-valor {
+    font-weight: 600;
+    color: var(--text-color);
+  }
+}

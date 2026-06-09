@@ -1,0 +1,22 @@
+<mat-toolbar class="navbar custom-navbar">
+  <span class="brand" routerLink="/dashboard">Minhas Finanças</span>
+
+  <div class="nav-links">
+    <button mat-button routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      <mat-icon>dashboard</mat-icon>
+      Dashboard
+    </button>
+    <button mat-button routerLink="/cartoes" routerLinkActive="active">
+      <mat-icon>credit_card</mat-icon>
+      Cartões
+    </button>
+    <button mat-button routerLink="/configuracoes" routerLinkActive="active">
+      <mat-icon>settings</mat-icon>
+      Configurações
+    </button>
+  </div>
+
+  <button mat-icon-button (click)="toggleTheme()" matTooltip="Alternar tema" class="theme-toggle">
+    <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  </button>
+</mat-toolbar>

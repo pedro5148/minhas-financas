@@ -1,0 +1,80 @@
+.modal-title {
+  margin-bottom: 0;
+  padding: 24px 24px 16px;
+  
+  .title-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    .title-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      background-color: var(--primary-bg);
+      border-radius: 50%;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    span {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.modal-form {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .description {
+    margin: 0;
+    padding: 12px 16px;
+    background-color: var(--bg-secondary);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .mt-16 {
+    margin-top: 16px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px 24px 24px;
+  margin-bottom: 0;
+  
+  button {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 0 24px;
+    min-width: 120px;
+    height: 40px;
+  }
+
+  .submit-button {
+    .button-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .spinner-button {
+      ::ng-deep circle { stroke: currentColor !important; }
+    }
+  }
+}

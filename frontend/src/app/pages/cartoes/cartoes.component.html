@@ -1,0 +1,27 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Cartões de Crédito</h1>
+      <p class="page-subtitle">Gerencie seus limites e faturas</p>
+    </div>
+    
+    <button mat-flat-button color="primary" class="action-button" (click)="adicionarCartao()">
+      <mat-icon>add</mat-icon>
+      Novo Cartão
+    </button>
+  </div>
+
+  <div class="cartoes-grid">
+    @if (cartoes.length === 0) {
+      <div class="empty-state">
+        <mat-icon>credit_card</mat-icon>
+        <p>Você ainda não tem cartões cadastrados.</p>
+        <button mat-button color="primary" (click)="adicionarCartao()">Cadastrar primeiro cartão</button>
+      </div>
+    } @else {
+      @for (cartao of cartoes; track cartao.id) {
+        <app-cartao-card [cartao]="cartao"></app-cartao-card>
+      }
+    }
+  </div>
+</div>

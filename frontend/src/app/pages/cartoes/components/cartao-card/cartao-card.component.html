@@ -1,0 +1,96 @@
+<mat-card class="cartao-card" (click)="abrirFatura()" matRipple>
+  <!-- HEADER -->
+  <div class="cartao-header">
+    <div class="brand-info">
+      <div class="brand-logo" [ngClass]="cartao.bandeira?.toLowerCase() || 'default'">
+        {{ cartao.bandeira || 'Card' }}
+      </div>
+      <div class="brand-text">
+        <span class="card-name">{{ cartao.nome }}</span>
+        <span class="card-type">
+          <mat-icon>credit_card</mat-icon> 
+          {{ cartao.bandeira || 'Crédito' }}
+        </span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <mat-icon>add</mat-icon>
+      <mat-icon>list_alt</mat-icon>
+      <mat-icon>more_vert</mat-icon>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="cartao-body">
+    <!-- LIMITES ROW -->
+    <div class="limites-row">
+      <div class="info-block">
+        <span class="label">Limite</span>
+        <span class="value">{{ cartao.limiteTotal | currency:'BRL' }}</span>
+      </div>
+      <div class="info-block text-center">
+        <span class="label">Em aberto</span>
+        <span class="value">{{ limiteUsado | currency:'BRL' }}</span>
+      </div>
+      <div class="info-block text-right">
+        <span class="label">Limite disp.</span>
+        <span class="value">{{ limiteDisponivel | currency:'BRL' }}</span>
+      </div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-wrapper">
+      <div class="progress-container">
+        <!-- Verde quando < 80%, Laranja < 95%, Vermelho > 95% -->
+        <div class="progress-bar" 
+             [style.width.%]="percentualUsado"
+             [ngClass]="{
+               'danger': percentualUsado > 90,
+               'warning': percentualUsado > 75 && percentualUsado <= 90
+             }">
+        </div>
+      </div>
+      <span class="progress-text">{{ percentualUsado | number:'1.0-0' }}%</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CONTA E DATAS -->
+    <div class="datas-row">
+      <div class="info-block">
+        <span class="label">Conta</span>
+        <span class="value">{{ cartao.contaPadrao?.nome || 'N/A' }}</span>
+      </div>
+      <div class="info-block text-center">
+        <span class="label">Fechamento</span>
+        <!-- Mostrando dia ex: 28/MAI. No angular date pipe não temos formato exato só com dia, vamos mostrar dia/mês atual -->
+        <span class="value">{{ cartao.diaFechamento | number:'2.0-0' }}</span>
+      </div>
+      <div class="info-block text-right">
+        <span class="label">Vencimento</span>
+        <span class="value">{{ cartao.diaVencimento | number:'2.0-0' }}</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FATURA INFO -->
+    <div class="fatura-row">
+      <span class="fatura-title">Fatura</span>
+      <span class="fatura-total">{{ (faturaAtual?.valorTotal || 0) | currency:'BRL' }}</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="cartao-footer">
+    <div class="status-badge" [ngClass]="(faturaAtual?.status || 'ABERTA').toLowerCase()">
+      <mat-icon *ngIf="faturaAtual?.status === 'FECHADA'">lock</mat-icon>
+      <mat-icon *ngIf="faturaAtual?.status !== 'FECHADA'">lock_open</mat-icon>
+      {{ (faturaAtual?.status || 'ABERTA') | titlecase }}
+    </div>
+    
+    <div class="action-link" *ngIf="faturaAtual?.status !== 'PAGA'">
+      <mat-icon>check_circle_outline</mat-icon> Registrar pagamento
+    </div>
+  </div>
+</mat-card>

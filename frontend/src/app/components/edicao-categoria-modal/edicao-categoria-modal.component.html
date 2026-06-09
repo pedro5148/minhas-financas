@@ -1,0 +1,100 @@
+<div class="modal-header">
+  <h2 mat-dialog-title>Editar Categoria</h2>
+  <button mat-icon-button class="close-btn" (click)="fechar()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="custom-scroll">
+  
+  <!-- EDIÇÃO DO NOME DA CATEGORIA -->
+  <section class="section-container">
+    <h3 class="section-title">Dados da Categoria</h3>
+    <form [formGroup]="categoriaForm" class="b2b-form">
+      <div class="form-group">
+        <label for="nomeCategoria">Nome <span class="required">*</span></label>
+        <input
+          id="nomeCategoria"
+          type="text"
+          formControlName="nome"
+          class="input-lg"
+          [class.is-invalid]="categoriaForm.get('nome')?.invalid && categoriaForm.get('nome')?.touched"
+        />
+      </div>
+    </form>
+  </section>
+
+  <!-- GERENCIAMENTO DE SUBCATEGORIAS -->
+  <section class="section-container subcategorias-section">
+    <h3 class="section-title">Subcategorias</h3>
+    
+    <!-- ADD SUBCATEGORIA FORM -->
+    <form [formGroup]="subcategoriaForm" class="add-subcategoria-form" (ngSubmit)="adicionarSubcategoria()">
+      <div class="input-with-button">
+        <input
+          type="text"
+          formControlName="nome"
+          placeholder="Nova subcategoria"
+          class="input-sm"
+        />
+        <button 
+          type="submit"
+          mat-flat-button 
+          color="primary" 
+          [disabled]="subcategoriaForm.invalid || adicionandoSubcategoria"
+          class="btn-add">
+          <div class="btn-content">
+            <mat-spinner *ngIf="adicionandoSubcategoria" diameter="16" class="spinner-button"></mat-spinner>
+            <mat-icon *ngIf="!adicionandoSubcategoria">add</mat-icon>
+            <span *ngIf="!adicionandoSubcategoria">Adicionar</span>
+          </div>
+        </button>
+      </div>
+    </form>
+
+    <!-- LISTA DE SUBCATEGORIAS -->
+    <div class="subcategorias-list-container">
+      @if (carregandoSubcategorias) {
+        <div class="loading-state">
+          <mat-spinner diameter="24"></mat-spinner>
+        </div>
+      } @else {
+        <div class="subcategorias-list">
+          @for (sub of subcategorias; track sub.id) {
+            <div class="subcategoria-item">
+              <span class="sub-name">{{ sub.nome }}</span>
+              <button 
+                mat-icon-button 
+                class="delete-btn" 
+                (click)="excluirSubcategoria(sub.id!)"
+                matTooltip="Excluir">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <p>Nenhuma subcategoria.</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="modal-actions">
+  <button mat-button (click)="fechar()" class="btn-cancelar">Cancelar</button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="salvarCategoria()" 
+    [disabled]="categoriaForm.invalid || salvandoCategoria" 
+    class="btn-salvar">
+    <div class="button-content">
+      <mat-spinner *ngIf="salvandoCategoria" diameter="18" class="spinner-button"></mat-spinner>
+      <span *ngIf="!salvandoCategoria">Salvar Alterações</span>
+      <span *ngIf="salvandoCategoria">Salvando...</span>
+    </div>
+  </button>
+</mat-dialog-actions>

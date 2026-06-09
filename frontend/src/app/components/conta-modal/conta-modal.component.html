@@ -1,0 +1,41 @@
+<h2 mat-dialog-title class="modal-title">
+  <div class="title-content">
+    <mat-icon class="title-icon text-primary">account_balance_wallet</mat-icon>
+    <span>Configurar Conta</span>
+  </div>
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="modal-form">
+    <p class="description">
+      Defina o saldo inicial da sua conta. Esse valor representa o montante no fechamento do mês anterior e é a base para os próximos cálculos.
+    </p>
+
+    <mat-form-field appearance="outline" class="full-width mt-16">
+      <mat-label>Nome da Conta</mat-label>
+      <input matInput formControlName="nome" placeholder="Ex: Conta Principal">
+      <mat-error *ngIf="form.get('nome')?.hasError('required')">O nome da conta é obrigatório.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Saldo Inicial (R$)</mat-label>
+      <input matInput type="number" formControlName="saldoInicial" placeholder="Ex: 1500.00">
+      <mat-error *ngIf="form.get('saldoInicial')?.hasError('required')">O saldo inicial é obrigatório.</mat-error>
+    </mat-form-field>
+
+    <div style="margin-top: 16px; margin-bottom: 8px;">
+      <mat-slide-toggle formControlName="padrao" color="primary">Definir como conta padrão</mat-slide-toggle>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()" [disabled]="salvando">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="salvar()" [disabled]="form.invalid || salvando" class="submit-button">
+    <div class="button-content">
+      <mat-spinner *ngIf="salvando" diameter="20" class="spinner-button"></mat-spinner>
+      <span *ngIf="!salvando">Salvar</span>
+      <span *ngIf="salvando">Salvando...</span>
+    </div>
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,104 @@
+<h2 mat-dialog-title>{{ cartaoAtual ? 'Editar' : 'Novo' }} Cartão de Crédito</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="b2b-form">
+    
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label for="nome">Nome do Cartão <span class="required">*</span></label>
+        <input 
+          id="nome"
+          type="text" 
+          formControlName="nome" 
+          placeholder="Ex: Nubank, Itaú"
+          [class.is-invalid]="form.get('nome')?.invalid && form.get('nome')?.touched"
+        />
+        <div class="error-text" *ngIf="form.get('nome')?.invalid && form.get('nome')?.touched">
+          Nome é obrigatório.
+        </div>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label for="bandeira">Bandeira <span class="required">*</span></label>
+        <select id="bandeira" formControlName="bandeira">
+          <option value="Mastercard">Mastercard</option>
+          <option value="Visa">Visa</option>
+          <option value="American Express">American Express</option>
+          <option value="Elo">Elo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="limiteTotal">Limite Total (R$) <span class="required">*</span></label>
+        <input 
+          id="limiteTotal"
+          type="number" 
+          formControlName="limiteTotal" 
+          placeholder="Ex: 5000.00"
+          [class.is-invalid]="form.get('limiteTotal')?.invalid && form.get('limiteTotal')?.touched"
+        />
+        <div class="error-text" *ngIf="form.get('limiteTotal')?.invalid && form.get('limiteTotal')?.touched">
+          Insira um valor maior que zero.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contaPadrao">Conta Corrente <span class="required">*</span></label>
+        <select 
+          id="contaPadrao" 
+          formControlName="contaPadrao"
+          [class.is-invalid]="form.get('contaPadrao')?.invalid && form.get('contaPadrao')?.touched"
+        >
+          <option [ngValue]="null" disabled selected>Selecione uma conta</option>
+          <option *ngFor="let c of contas" [ngValue]="c">{{ c.nome }}</option>
+        </select>
+        <div class="error-text" *ngIf="form.get('contaPadrao')?.invalid && form.get('contaPadrao')?.touched">
+          Selecione a conta para débito da fatura.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="diaFechamento">Dia de Fechamento <span class="required">*</span></label>
+        <input 
+          id="diaFechamento"
+          type="number" 
+          formControlName="diaFechamento" 
+          min="1" max="31"
+          placeholder="Ex: 25"
+          [class.is-invalid]="form.get('diaFechamento')?.invalid && form.get('diaFechamento')?.touched"
+        />
+        <div class="error-text" *ngIf="form.get('diaFechamento')?.invalid && form.get('diaFechamento')?.touched">
+          Insira um dia válido.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="diaVencimento">Dia de Vencimento <span class="required">*</span></label>
+        <input 
+          id="diaVencimento"
+          type="number" 
+          formControlName="diaVencimento" 
+          min="1" max="31"
+          placeholder="Ex: 5"
+          [class.is-invalid]="form.get('diaVencimento')?.invalid && form.get('diaVencimento')?.touched"
+        />
+        <div class="error-text" *ngIf="form.get('diaVencimento')?.invalid && form.get('diaVencimento')?.touched">
+          Insira um dia válido.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group-checkbox">
+      <mat-checkbox formControlName="principal" color="primary">Definir como cartão principal</mat-checkbox>
+    </div>
+    
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()" class="btn-cancelar">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="salvar()" class="btn-salvar">Salvar</button>
+</mat-dialog-actions>

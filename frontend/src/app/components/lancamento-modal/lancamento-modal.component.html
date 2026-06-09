@@ -1,0 +1,176 @@
+<h2 mat-dialog-title>{{ lancamentoAtual ? 'Editar' : 'Novo(a)' }} {{ tipo | titlecase }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="b2b-form">
+
+    <div class="form-group">
+      <label for="descricao">Descrição <span class="required">*</span></label>
+      <input id="descricao" type="text" formControlName="descricao" placeholder="Ex: Conta de Luz"
+        [class.is-invalid]="form.get('descricao')?.invalid && form.get('descricao')?.touched" class="input-lg" />
+      <div class="error-text" *ngIf="form.get('descricao')?.invalid && form.get('descricao')?.touched">
+        Descrição é obrigatória.
+      </div>
+    </div>
+
+    <ng-container *ngIf="tipo === 'TRANSFERENCIA'; else normalLayout">
+      <div class="form-row three-cols">
+        <div class="form-group">
+          <label for="valor">Valor (R$) <span class="required">*</span></label>
+          <input id="valor" type="number" formControlName="valor" placeholder="Ex: 150.00"
+            [class.is-invalid]="form.get('valor')?.invalid && form.get('valor')?.touched" />
+          <div class="error-text" *ngIf="form.get('valor')?.invalid && form.get('valor')?.touched">
+            Insira um valor maior que R$ 0,00.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="conta">Conta Origem <span class="required">*</span></label>
+          <select id="conta" formControlName="conta"
+            [class.is-invalid]="form.get('conta')?.invalid && form.get('conta')?.touched">
+            <option [ngValue]="null" disabled selected>Selecione uma conta</option>
+            <option *ngFor="let c of contas" [ngValue]="c">{{ c.nome }}</option>
+          </select>
+          <div class="error-text" *ngIf="form.get('conta')?.invalid && form.get('conta')?.touched">
+            Conta de origem é obrigatória.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="contaDestino">Conta Destino <span class="required">*</span></label>
+          <select id="contaDestino" formControlName="contaDestino"
+            [class.is-invalid]="form.get('contaDestino')?.invalid && form.get('contaDestino')?.touched">
+            <option [ngValue]="null" disabled selected>Selecione a conta destino</option>
+            <option *ngFor="let c of contas" [ngValue]="c">{{ c.nome }}</option>
+          </select>
+          <div class="error-text" *ngIf="form.get('contaDestino')?.invalid && form.get('contaDestino')?.touched">
+            Conta de destino é obrigatória.
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #normalLayout>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="valor">Valor (R$) <span class="required">*</span></label>
+          <input id="valor" type="number" formControlName="valor" placeholder="Ex: 150.00"
+            [class.is-invalid]="form.get('valor')?.invalid && form.get('valor')?.touched" />
+          <div class="error-text" *ngIf="form.get('valor')?.invalid && form.get('valor')?.touched">
+            Insira um valor maior que R$ 0,00.
+          </div>
+        </div>
+
+        <div class="form-group" *ngIf="tipo === 'DESPESA'">
+          <label for="cartaoCredito">Cartão de Crédito (Opcional)</label>
+          <select id="cartaoCredito" formControlName="cartaoCredito">
+            <option [ngValue]="null" selected>Nenhum</option>
+            <option *ngFor="let c of cartoes" [ngValue]="c">{{ c.nome }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="conta">Conta Origem <span class="required">*</span></label>
+          <select id="conta" formControlName="conta"
+            [class.is-invalid]="form.get('conta')?.invalid && form.get('conta')?.touched">
+            <option [ngValue]="null" disabled selected>Selecione uma conta</option>
+            <option *ngFor="let c of contas" [ngValue]="c">{{ c.nome }}</option>
+          </select>
+          <div class="error-text" *ngIf="form.get('conta')?.invalid && form.get('conta')?.touched">
+            Conta de origem é obrigatória.
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="form-row" *ngIf="tipo !== 'TRANSFERENCIA'">
+      <div class="form-group">
+        <label for="categoria">Categoria <span class="required">*</span></label>
+        <select id="categoria" formControlName="categoria"
+          [class.is-invalid]="form.get('categoria')?.invalid && form.get('categoria')?.touched">
+          <option [ngValue]="null" disabled selected>Selecione uma categoria</option>
+          <option *ngFor="let cat of categorias" [ngValue]="cat">{{ cat.nome }}</option>
+        </select>
+        <div class="error-text" *ngIf="form.get('categoria')?.invalid && form.get('categoria')?.touched">
+          Categoria é obrigatória.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="subcategoria">Subcategoria</label>
+        <select id="subcategoria" formControlName="subcategoria">
+          <option [ngValue]="null" selected>Nenhuma subcategoria</option>
+          <option *ngFor="let sub of subcategoriasFiltradas" [ngValue]="sub">{{ sub.nome }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-datepicker">
+        <label>Data do Lançamento <span class="required">*</span></label>
+        <mat-form-field>
+          <input matInput [matDatepicker]="pickerLanc" formControlName="dataLancamento" placeholder="DD/MM/AAAA">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerLanc"></mat-datepicker-toggle>
+          <mat-datepicker #pickerLanc></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="form-group-datepicker">
+        <label>Data de Vencimento <span class="required">*</span></label>
+        <mat-form-field>
+          <input matInput [matDatepicker]="pickerVenc" formControlName="dataVencimento" placeholder="DD/MM/AAAA">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerVenc"></mat-datepicker-toggle>
+          <mat-datepicker #pickerVenc></mat-datepicker>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-datepicker">
+        <label>Data de Efetivação <span *ngIf="form.get('status')?.value === 'EFETIVADO'" class="required">*</span><span
+            *ngIf="form.get('status')?.value !== 'EFETIVADO'"> (Opcional)</span></label>
+        <mat-form-field>
+          <input matInput [matDatepicker]="pickerEfet" formControlName="dataEfetivacao" placeholder="DD/MM/AAAA">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerEfet"></mat-datepicker-toggle>
+          <mat-datepicker #pickerEfet></mat-datepicker>
+          <mat-error *ngIf="form.get('dataEfetivacao')?.hasError('required')">Data obrigatória.</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status <span class="required">*</span></label>
+        <select id="status" formControlName="status">
+          <option value="PENDENTE">Pendente</option>
+          <option value="EFETIVADO">Efetivado</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="recorrencia-section-card">
+      <p class="recorrencia-label">Recorrência:</p>
+      <mat-radio-group formControlName="tipoRecorrencia" class="recorrencia-radio-group">
+        <mat-radio-button value="NENHUMA">Única</mat-radio-button>
+        <mat-radio-button value="MENSAL">Mensal Fixa</mat-radio-button>
+        <mat-radio-button value="PARCELADO">Parcelado</mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <div class="form-group" *ngIf="form.get('tipoRecorrencia')?.value === 'PARCELADO'">
+      <label for="totalParcelas">Número de Parcelas <span class="required">*</span></label>
+      <input id="totalParcelas" type="number" formControlName="totalParcelas" min="2" placeholder="Mínimo 2 parcelas"
+        [class.is-invalid]="form.get('totalParcelas')?.invalid && form.get('totalParcelas')?.touched" />
+      <div class="error-text" *ngIf="form.get('totalParcelas')?.invalid && form.get('totalParcelas')?.touched">
+        Insira o número total de parcelas (mínimo 2).
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="observacoes">Observações</label>
+      <textarea id="observacoes" formControlName="observacoes" rows="2"
+        placeholder="Observações adicionais..."></textarea>
+    </div>
+
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()" class="btn-cancelar">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="salvar()" class="btn-salvar">Salvar</button>
+</mat-dialog-actions>

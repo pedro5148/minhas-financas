@@ -1,0 +1,10 @@
+@import '../../../../../styles.scss';
+
+.form-group-checkbox {
+  margin-top: 16px;
+  padding: 8px 0;
+  
+  ::ng-deep .mdc-form-field {
+    color: var(--text-color);
+  }
+}

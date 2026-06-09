@@ -1,0 +1,102 @@
+<div class="config-container">
+  <header class="config-header card-panel">
+    <div class="header-content">
+      <h2 class="page-title">Configurações</h2>
+      <p class="page-subtitle">Gerencie suas preferências de conta e categorias do aplicativo.</p>
+    </div>
+  </header>
+
+  <div class="config-content">
+    
+    <!-- CONTA SECTION -->
+    <section class="config-section">
+      <mat-card class="premium-card">
+        <mat-card-header>
+          <div mat-card-avatar class="card-icon account-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <mat-card-title>Conta Principal</mat-card-title>
+          <mat-card-subtitle>Configure seu saldo inicial</mat-card-subtitle>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="card-body">
+            @if (carregando) {
+              <div class="loading-state">
+                <mat-spinner diameter="30"></mat-spinner>
+                <p>Carregando dados da conta...</p>
+              </div>
+            } @else if (conta) {
+              <div class="account-details">
+                <div class="detail-item">
+                  <span class="detail-label">Nome da Conta</span>
+                  <span class="detail-value">{{ conta.nome }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Saldo Inicial</span>
+                  <span class="detail-value balance">{{ conta.saldoInicial | currency:'BRL':'symbol':'1.2-2' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+        
+        <mat-card-actions align="end" class="card-actions">
+          <button mat-stroked-button color="primary" (click)="abrirModalConta()" [disabled]="carregando">
+            <mat-icon>edit</mat-icon> Editar Conta
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </section>
+
+    <!-- CATEGORIAS SECTION -->
+    <section class="config-section">
+      <mat-card class="premium-card">
+        <mat-card-header class="header-with-action">
+          <div class="header-left">
+            <div mat-card-avatar class="card-icon category-icon">
+              <mat-icon>category</mat-icon>
+            </div>
+            <div class="header-text">
+              <mat-card-title>Categorias de Lançamento</mat-card-title>
+              <mat-card-subtitle>Organize suas finanças gerenciando as categorias</mat-card-subtitle>
+            </div>
+          </div>
+          
+          <button mat-flat-button color="primary" class="action-button" (click)="abrirModalCategoria()">
+            <mat-icon>add</mat-icon> Nova Categoria
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          @if (carregandoCategorias) {
+            <div class="loading-state">
+              <mat-spinner diameter="30"></mat-spinner>
+              <p>Carregando categorias...</p>
+            </div>
+          } @else {
+            <div class="category-list">
+              @for (cat of categorias; track cat.id) {
+                <div class="category-item" (click)="abrirModalEdicaoCategoria(cat)" style="cursor: pointer;">
+                  <div class="cat-info">
+                    <mat-icon class="cat-icon">label</mat-icon>
+                    <span class="cat-name">{{ cat.nome }}</span>
+                  </div>
+                  <button mat-icon-button class="delete-btn" (click)="excluirCategoria(cat.id!); $event.stopPropagation()" matTooltip="Excluir categoria">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              } @empty {
+                <div class="empty-state">
+                  <mat-icon>category</mat-icon>
+                  <p>Nenhuma categoria cadastrada.</p>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+  </div>
+</div>

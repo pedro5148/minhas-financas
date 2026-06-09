@@ -1,0 +1,61 @@
+.recorrencia-section-card {
+  background-color: var(--bg-primary);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .recorrencia-label {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .recorrencia-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    ::ng-deep .mat-mdc-radio-button .mdc-label {
+      color: var(--text-primary);
+    }
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+}
+
+.btn-cancelar {
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  background-color: transparent !important;
+
+  &:hover {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+  }
+}
+
+.btn-salvar {
+  background-color: var(--accent-color) !important;
+  color: white !important;
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover) !important;
+    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2) !important;
+  }
+
+  &:disabled {
+    background-color: #cbd5e1 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+  }
+}

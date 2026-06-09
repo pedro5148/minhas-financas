@@ -1,0 +1,49 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 0 16px;
+}
+
+.custom-navbar {
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text) !important;
+  --mat-toolbar-container-background-color: var(--navbar-bg);
+  --mat-toolbar-container-text-color: var(--navbar-text);
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.brand {
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 24px;
+  color: var(--navbar-text) !important;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+
+  button {
+    color: var(--navbar-text) !important;
+
+    mat-icon {
+      color: var(--navbar-text) !important;
+    }
+  }
+}
+
+.theme-toggle {
+  position: fixed !important;
+  right: 16px;
+  top: 12px;
+  z-index: 1001;
+  color: var(--navbar-text) !important;
+}
+
+.active {
+  background: rgba(0, 0, 0, 0.08);
+}
