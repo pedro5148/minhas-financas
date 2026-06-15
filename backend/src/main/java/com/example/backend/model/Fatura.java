@@ -2,7 +2,9 @@ package com.example.backend.model;
 
 import com.example.backend.enums.StatusFatura;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
@@ -11,17 +13,24 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "faturas")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Fatura {
 
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cartao_id", nullable = false)
+    @JoinColumn(
+            name = "cartao_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_faturas_cartao_id")
+    )
     private CartaoCredito cartao;
 
     @Column(nullable = false, length = 7)

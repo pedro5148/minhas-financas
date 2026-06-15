@@ -1,0 +1,28 @@
+<div class="summary-cards">
+  <mat-card class="summary-card saldo-inicial-card">
+    <mat-card-content>
+      <p class="label">Saldo Inicial</p>
+      <h3 [class.text-danger]="saldoInicial < 0" [class.text-success]="saldoInicial >= 0">
+        {{ saldoInicial | currency:'BRL':'symbol' }}
+      </h3>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="summary-card saldo-atual-card">
+    <mat-card-content>
+      <p class="label">Saldo Atual</p>
+      <h3 [class.text-danger]="saldoAtual < 0" [class.text-success]="saldoAtual >= 0">
+        {{ saldoAtual | currency:'BRL':'symbol' }}
+      </h3>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="summary-card saldo-previsto-card">
+    <mat-card-content>
+      <p class="label">Saldo Previsto</p>
+      <h3 [class.text-danger]="saldoPrevisto < 0" [class.text-success]="saldoPrevisto >= 0">
+        {{ saldoPrevisto | currency:'BRL':'symbol' }}
+      </h3>
+    </mat-card-content>
+  </mat-card>
+</div>

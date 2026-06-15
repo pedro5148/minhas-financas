@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { ContaService } from '../../services/conta.service';
-import { Conta } from '../../models/types';
+import { Conta } from '../../models/conta.model';
 
 @Component({
   selector: 'app-conta-modal',

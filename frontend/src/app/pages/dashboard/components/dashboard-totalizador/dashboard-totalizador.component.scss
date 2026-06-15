@@ -1,0 +1,41 @@
+.totalizer-card-wrapper {
+  margin-top: 32px;
+}
+.totalizer-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary, var(--mat-app-surface));
+}
+.totalizer-card mat-card-content {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 32px;
+}
+.tot-item {
+  text-align: center;
+  flex: 1;
+}
+.tot-item p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.tot-item h3 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -1px;
+}
+.vertical-divider {
+  width: 1px;
+  height: 80px;
+  background-color: var(--border-color);
+  margin: 0 32px;
+}
+.text-success { color: var(--color-success, #10b981); }
+.text-danger { color: var(--color-danger, #ef4444); }

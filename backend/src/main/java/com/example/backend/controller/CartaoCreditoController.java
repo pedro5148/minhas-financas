@@ -1,7 +1,9 @@
 package com.example.backend.controller;
 
-import com.example.backend.model.CartaoCredito;
+import com.example.backend.dto.CartaoCreditoRequestDTO;
+import com.example.backend.dto.CartaoCreditoResponseDTO;
 import com.example.backend.service.CartaoCreditoService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,18 +20,18 @@ public class CartaoCreditoController {
     }
 
     @GetMapping
-    public List<CartaoCredito> listarTodos() {
+    public List<CartaoCreditoResponseDTO> listarTodos() {
         return service.listarTodos();
     }
 
     @PostMapping
-    public CartaoCredito criar(@RequestBody CartaoCredito cartao) {
-        return service.criar(cartao);
+    public CartaoCreditoResponseDTO criar(@Valid @RequestBody CartaoCreditoRequestDTO dto) {
+        return service.criar(dto);
     }
 
     @PutMapping("/{id}")
-    public CartaoCredito atualizar(@PathVariable Long id, @RequestBody CartaoCredito cartao) {
-        return service.atualizar(id, cartao);
+    public CartaoCreditoResponseDTO atualizar(@PathVariable Long id, @Valid @RequestBody CartaoCreditoRequestDTO dto) {
+        return service.atualizar(id, dto);
     }
 
     @DeleteMapping("/{id}")

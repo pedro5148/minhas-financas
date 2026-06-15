@@ -1,0 +1,38 @@
+<div class="table-section">
+  <div class="section-header">
+    <h3>{{ titulo }}</h3>
+  </div>
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="b2b-table">
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th style="width: 50px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of lancamentos" (click)="onRowClick(l)" style="cursor: pointer;" class="clickable-row">
+            <td><strong class="item-title">{{ l.descricao }}</strong></td>
+            <td>{{ l.dataLancamento | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="badge" [ngClass]="tipoBadge">
+                {{ tipoBadge === 'receita' ? '+' : '-' }}{{ l.valor | currency:'BRL':'symbol' }}
+              </span>
+            </td>
+            <td class="action-cell">
+              <button mat-icon-button color="warn" (click)="onDeleteClick(l, $event)" matTooltip="Excluir" class="delete-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="lancamentos.length === 0">
+            <td colspan="4" class="empty-state">Nenhum lançamento no período</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

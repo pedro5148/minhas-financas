@@ -1,12 +1,15 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CartaoCreditoService } from '../../services/cartao-credito.service';
-import { CartaoCredito } from '../../models/types';
+import { CartaoCredito } from '../../models/cartao-credito.model';
 import { CartaoCardComponent } from './components/cartao-card/cartao-card.component';
 import { CartaoModalComponent } from './components/cartao-modal/cartao-modal.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { BehaviorSubject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-cartoes',
@@ -18,17 +21,22 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 export class CartoesComponent implements OnInit {
   private cartaoService = inject(CartaoCreditoService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   cartoes: CartaoCredito[] = [];
+  private reloadTrigger = new BehaviorSubject<void>(undefined);
 
   ngOnInit(): void {
-    this.carregarCartoes();
+    this.reloadTrigger.pipe(
+      takeUntilDestroyed(this.destroyRef),
+      switchMap(() => this.cartaoService.listarTodos())
+    ).subscribe(data => {
+      this.cartoes = data;
+    });
   }
 
   carregarCartoes() {
-    this.cartaoService.listarTodos().subscribe(data => {
-      this.cartoes = data;
-    });
+    this.reloadTrigger.next();
   }
 
   adicionarCartao() {
@@ -37,7 +45,7 @@ export class CartoesComponent implements OnInit {
       maxWidth: '95vw'
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       if (result) {
         this.carregarCartoes();
       }

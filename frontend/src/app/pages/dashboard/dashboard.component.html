@@ -10,164 +10,40 @@
     </button>
   </header>
 
-  <div class="summary-cards">
-    <mat-card class="summary-card saldo-inicial-card">
-      <mat-card-content>
-        <p class="label">Saldo Inicial</p>
-        <h3 [class.text-danger]="saldoInicial < 0" [class.text-success]="saldoInicial >= 0">
-          {{ saldoInicial | currency:'BRL':'symbol' }}
-        </h3>
-      </mat-card-content>
-    </mat-card>
+  <app-dashboard-resumo-saldos
+    [saldoInicial]="saldoInicial"
+    [saldoAtual]="saldoAtual"
+    [saldoPrevisto]="saldoPrevisto">
+  </app-dashboard-resumo-saldos>
 
-    <mat-card class="summary-card saldo-atual-card">
-      <mat-card-content>
-        <p class="label">Saldo Atual</p>
-        <h3 [class.text-danger]="saldoAtual < 0" [class.text-success]="saldoAtual >= 0">
-          {{ saldoAtual | currency:'BRL':'symbol' }}
-        </h3>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card saldo-previsto-card">
-      <mat-card-content>
-        <p class="label">Saldo Previsto</p>
-        <h3 [class.text-danger]="saldoPrevisto < 0" [class.text-success]="saldoPrevisto >= 0">
-          {{ saldoPrevisto | currency:'BRL':'symbol' }}
-        </h3>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <div class="details-cards">
-    <mat-card class="detail-card border-danger">
-      <mat-card-content>
-        <div class="icon-container bg-danger-light">
-          <mat-icon class="text-danger">arrow_downward</mat-icon>
-        </div>
-        <div class="info">
-          <p class="label">Despesas Pendentes</p>
-          <h4 class="text-danger">{{ totalDespesasPendentes | currency:'BRL':'symbol' }}</h4>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="detail-card border-success">
-      <mat-card-content>
-        <div class="icon-container bg-success-light">
-          <mat-icon class="text-success">arrow_upward</mat-icon>
-        </div>
-        <div class="info">
-          <p class="label">Receitas Pendentes</p>
-          <h4 class="text-success">{{ totalReceitasPendentes | currency:'BRL':'symbol' }}</h4>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="detail-card border-warning">
-      <mat-card-content>
-        <div class="icon-container bg-warning-light">
-          <mat-icon class="text-warning">swap_horiz</mat-icon>
-        </div>
-        <div class="info">
-          <p class="label">Transferências</p>
-          <h4 class="text-warning">{{ totalTransferencias | currency:'BRL':'symbol' }}</h4>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
+  <app-dashboard-detalhes-pendencias
+    [totalDespesasPendentes]="totalDespesasPendentes"
+    [totalReceitasPendentes]="totalReceitasPendentes"
+    [totalTransferencias]="totalTransferencias">
+  </app-dashboard-detalhes-pendencias>
 
   <div class="lists-grid">
-    <div class="table-section">
-      <div class="section-header">
-        <h3>Últimas Despesas</h3>
-      </div>
-      <div class="table-card">
-        <div class="table-responsive">
-          <table class="b2b-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Valor</th>
-                <th style="width: 50px;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let d of ultimasDespesas" (click)="abrirModalEdicaoLancamento(d)" style="cursor: pointer;" class="clickable-row">
-                <td><strong class="item-title">{{ d.descricao }}</strong></td>
-                <td>{{ d.dataLancamento | date:'dd/MM/yyyy' }}</td>
-                <td>
-                  <span class="badge despesa">-{{ d.valor | currency:'BRL':'symbol' }}</span>
-                </td>
-                <td class="action-cell">
-                  <button mat-icon-button color="warn" (click)="excluirLancamento(d, $event)" matTooltip="Excluir" class="delete-btn">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="ultimasDespesas.length === 0">
-                <td colspan="4" class="empty-state">Nenhuma despesa no mês</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <app-dashboard-ultimos-lancamentos
+      titulo="Últimas Despesas"
+      tipoBadge="despesa"
+      [lancamentos]="ultimasDespesas"
+      (editar)="abrirModalEdicaoLancamento($event)"
+      (excluir)="excluirLancamento($event)">
+    </app-dashboard-ultimos-lancamentos>
 
-    <div class="table-section">
-      <div class="section-header">
-        <h3>Últimas Receitas</h3>
-      </div>
-      <div class="table-card">
-        <div class="table-responsive">
-          <table class="b2b-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Valor</th>
-                <th style="width: 50px;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let r of ultimasReceitas" (click)="abrirModalEdicaoLancamento(r)" style="cursor: pointer;" class="clickable-row">
-                <td><strong class="item-title">{{ r.descricao }}</strong></td>
-                <td>{{ r.dataLancamento | date:'dd/MM/yyyy' }}</td>
-                <td>
-                  <span class="badge receita">+{{ r.valor | currency:'BRL':'symbol' }}</span>
-                </td>
-                <td class="action-cell">
-                  <button mat-icon-button color="warn" (click)="excluirLancamento(r, $event)" matTooltip="Excluir" class="delete-btn">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="ultimasReceitas.length === 0">
-                <td colspan="4" class="empty-state">Nenhuma receita no mês</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <app-dashboard-ultimos-lancamentos
+      titulo="Últimas Receitas"
+      tipoBadge="receita"
+      [lancamentos]="ultimasReceitas"
+      (editar)="abrirModalEdicaoLancamento($event)"
+      (excluir)="excluirLancamento($event)">
+    </app-dashboard-ultimos-lancamentos>
   </div>
 
-  <div class="totalizer-card-wrapper">
-    <mat-card class="totalizer-card">
-      <mat-card-content>
-        <div class="tot-item">
-          <p>Total Recebido</p>
-          <h3 class="text-success">{{ totalRecebido | currency:'BRL':'symbol' }}</h3>
-        </div>
-        <div class="vertical-divider"></div>
-        <div class="tot-item">
-          <p>Total Gasto</p>
-          <h3 class="text-danger">{{ totalGasto | currency:'BRL':'symbol' }}</h3>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
+  <app-dashboard-totalizador
+    [totalRecebido]="totalRecebido"
+    [totalGasto]="totalGasto">
+  </app-dashboard-totalizador>
 
   <div class="fab-container">
     <button mat-fab class="main-fab primary-fab">

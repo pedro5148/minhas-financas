@@ -1,24 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CartaoCredito } from '../models/types';
+import { CartaoCredito, CartaoCreditoRequestDTO } from '../models/cartao-credito.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CartaoCreditoService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8082/api/cartoes';
+  private apiUrl = `${environment.apiUrl}/cartoes`;
 
   listarTodos(): Observable<CartaoCredito[]> {
     return this.http.get<CartaoCredito[]>(this.apiUrl);
   }
 
-  criar(cartao: CartaoCredito): Observable<CartaoCredito> {
+  criar(cartao: CartaoCreditoRequestDTO): Observable<CartaoCredito> {
     return this.http.post<CartaoCredito>(this.apiUrl, cartao);
   }
 
-  atualizar(id: number, cartao: CartaoCredito): Observable<CartaoCredito> {
+  atualizar(id: number, cartao: CartaoCreditoRequestDTO): Observable<CartaoCredito> {
     return this.http.put<CartaoCredito>(`${this.apiUrl}/${id}`, cartao);
   }
 

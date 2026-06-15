@@ -1,0 +1,12 @@
+<div class="alert-dialog-container">
+  <div class="alert-icon-wrapper">
+    <mat-icon class="alert-icon">warning</mat-icon>
+  </div>
+  <h2 mat-dialog-title class="alert-title">{{ data.titulo }}</h2>
+  <mat-dialog-content>
+    <p class="alert-message">{{ data.mensagem }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="center">
+    <button mat-raised-button color="primary" (click)="fechar()" class="btn-entendi">Entendi</button>
+  </mat-dialog-actions>
+</div>

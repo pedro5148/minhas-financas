@@ -1,24 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Conta } from '../models/types';
+import { Conta, ContaRequestDTO } from '../models/conta.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContaService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8082/api/contas';
+  private apiUrl = `${environment.apiUrl}/contas`;
 
   listarTodos(): Observable<Conta[]> {
     return this.http.get<Conta[]>(this.apiUrl);
   }
 
-  criar(conta: Conta): Observable<Conta> {
+  criar(conta: ContaRequestDTO): Observable<Conta> {
     return this.http.post<Conta>(this.apiUrl, conta);
   }
 
-  atualizar(id: number, conta: Conta): Observable<Conta> {
+  atualizar(id: number, conta: ContaRequestDTO): Observable<Conta> {
     return this.http.put<Conta>(`${this.apiUrl}/${id}`, conta);
   }
 }

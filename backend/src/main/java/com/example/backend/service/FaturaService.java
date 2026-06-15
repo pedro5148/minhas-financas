@@ -1,15 +1,18 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.FaturaResponseDTO;
 import com.example.backend.enums.StatusFatura;
 import com.example.backend.enums.StatusLancamento;
 import com.example.backend.enums.TipoLancamento;
 import com.example.backend.enums.TipoRecorrencia;
+import com.example.backend.mapper.FaturaMapper;
 import com.example.backend.model.CartaoCredito;
 import com.example.backend.model.Fatura;
 import com.example.backend.model.Lancamento;
 import com.example.backend.repository.CartaoCreditoRepository;
 import com.example.backend.repository.FaturaRepository;
 import com.example.backend.repository.LancamentoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class FaturaService {
@@ -25,21 +29,25 @@ public class FaturaService {
     private final FaturaRepository faturaRepository;
     private final CartaoCreditoRepository cartaoRepository;
     private final LancamentoRepository lancamentoRepository;
+    private final FaturaMapper mapper;
 
-    public FaturaService(FaturaRepository faturaRepository, CartaoCreditoRepository cartaoRepository, LancamentoRepository lancamentoRepository) {
+    public FaturaService(FaturaRepository faturaRepository, CartaoCreditoRepository cartaoRepository, LancamentoRepository lancamentoRepository, FaturaMapper mapper) {
         this.faturaRepository = faturaRepository;
         this.cartaoRepository = cartaoRepository;
         this.lancamentoRepository = lancamentoRepository;
+        this.mapper = mapper;
     }
 
-    public List<Fatura> buscarPorCartao(Long cartaoId) {
-        return faturaRepository.findByCartaoId(cartaoId);
+    public List<FaturaResponseDTO> buscarPorCartao(Long cartaoId) {
+        return faturaRepository.findByCartaoId(cartaoId).stream()
+                .map(mapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public Fatura obterOuCriarFatura(Long cartaoId, LocalDate dataCompra) {
         CartaoCredito cartao = cartaoRepository.findById(cartaoId)
-                .orElseThrow(() -> new RuntimeException("Cartão não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Cartão não encontrado"));
 
         LocalDate dataFechamentoAtual = LocalDate.of(dataCompra.getYear(), dataCompra.getMonth(), cartao.getDiaFechamento());
         LocalDate mesReferencia;
@@ -78,7 +86,7 @@ public class FaturaService {
     @Transactional
     public void atualizarValorFatura(Long faturaId) {
         Fatura fatura = faturaRepository.findById(faturaId)
-                .orElseThrow(() -> new RuntimeException("Fatura não encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Fatura não encontrada"));
         
         List<Lancamento> despesas = lancamentoRepository.findByFaturaId(faturaId);
         BigDecimal total = despesas.stream()
@@ -90,9 +98,9 @@ public class FaturaService {
     }
 
     @Transactional
-    public Fatura pagarFatura(Long faturaId) {
+    public FaturaResponseDTO pagarFatura(Long faturaId) {
         Fatura fatura = faturaRepository.findById(faturaId)
-                .orElseThrow(() -> new RuntimeException("Fatura não encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Fatura não encontrada"));
 
         if (fatura.getStatus() == StatusFatura.PAGA) {
             throw new RuntimeException("A fatura já está paga");
@@ -116,6 +124,6 @@ public class FaturaService {
 
         lancamentoRepository.save(pagamento);
 
-        return faturaRepository.save(fatura);
+        return mapper.toResponseDTO(faturaRepository.save(fatura));
     }
 }

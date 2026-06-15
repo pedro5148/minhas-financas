@@ -9,7 +9,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CartaoCreditoService } from '../../../../services/cartao-credito.service';
 import { ContaService } from '../../../../services/conta.service';
-import { Conta, CartaoCredito } from '../../../../models/types';
+import { Conta } from '../../../../models/conta.model';
+import { CartaoCredito, CartaoCreditoRequestDTO } from '../../../../models/cartao-credito.model';
 
 @Component({
   selector: 'app-cartao-modal',
@@ -76,20 +77,19 @@ export class CartaoModalComponent implements OnInit {
     }
 
     const values = this.form.value;
-    const cartao: CartaoCredito = {
-      ...this.cartaoAtual,
+    const cartaoRequest: CartaoCreditoRequestDTO = {
       nome: values.nome,
       limiteTotal: values.limiteTotal,
       bandeira: values.bandeira,
-      contaPadrao: values.contaPadrao,
+      contaPadraoId: values.contaPadrao.id,
       diaFechamento: values.diaFechamento,
       diaVencimento: values.diaVencimento,
       principal: values.principal
     };
 
-    const req$ = cartao.id 
-      ? this.cartaoService.atualizar(cartao.id, cartao)
-      : this.cartaoService.criar(cartao);
+    const req$ = this.cartaoAtual?.id 
+      ? this.cartaoService.atualizar(this.cartaoAtual.id, cartaoRequest)
+      : this.cartaoService.criar(cartaoRequest);
 
     req$.subscribe({
       next: () => this.dialogRef.close(true),

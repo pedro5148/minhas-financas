@@ -1,33 +1,60 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Lancamento } from '../models/types';
+import { Observable, Subject } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { LancamentoResponseDTO, LancamentoRequestDTO } from '../models/lancamento.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LancamentoService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8082/api/lancamentos';
+  private apiUrl = `${environment.apiUrl}/lancamentos`;
 
-  listarTodos(): Observable<Lancamento[]> {
-    return this.http.get<Lancamento[]>(this.apiUrl);
+  private lancamentoAlteradoSource = new Subject<void>();
+  lancamentoAlterado$ = this.lancamentoAlteradoSource.asObservable();
+
+  notificarAlteracao() {
+    this.lancamentoAlteradoSource.next();
   }
 
-  listarPorMesAno(ano: number, mes: number): Observable<Lancamento[]> {
-    return this.http.get<Lancamento[]>(`${this.apiUrl}/mes/${ano}/${mes}`);
+  private parseValores(lancamentos: LancamentoResponseDTO[]): LancamentoResponseDTO[] {
+    return lancamentos.map(l => ({
+      ...l,
+      valor: typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor
+    }));
   }
 
-  listarPorFatura(faturaId: number): Observable<Lancamento[]> {
-    return this.http.get<Lancamento[]>(`${this.apiUrl}/fatura/${faturaId}`);
+  listarTodos(): Observable<LancamentoResponseDTO[]> {
+    return this.http.get<LancamentoResponseDTO[]>(this.apiUrl).pipe(
+      map(res => this.parseValores(res))
+    );
   }
 
-  criar(lancamento: Lancamento): Observable<Lancamento[]> {
-    return this.http.post<Lancamento[]>(this.apiUrl, lancamento);
+  listarPorMesAno(ano: number, mes: number): Observable<LancamentoResponseDTO[]> {
+    return this.http.get<LancamentoResponseDTO[]>(`${this.apiUrl}/mes/${ano}/${mes}`).pipe(
+      map(res => this.parseValores(res))
+    );
   }
 
-  atualizar(id: number, lancamento: Lancamento): Observable<Lancamento> {
-    return this.http.put<Lancamento>(`${this.apiUrl}/${id}`, lancamento);
+  listarPorFatura(faturaId: number): Observable<LancamentoResponseDTO[]> {
+    return this.http.get<LancamentoResponseDTO[]>(`${this.apiUrl}/fatura/${faturaId}`).pipe(
+      map(res => this.parseValores(res))
+    );
+  }
+
+  criar(lancamento: LancamentoRequestDTO): Observable<LancamentoResponseDTO[]> {
+    return this.http.post<LancamentoResponseDTO[]>(this.apiUrl, lancamento);
+  }
+
+  atualizar(id: number, lancamento: LancamentoRequestDTO): Observable<LancamentoResponseDTO> {
+    return this.http.put<LancamentoResponseDTO>(`${this.apiUrl}/${id}`, lancamento).pipe(
+      map(l => ({
+        ...l,
+        valor: typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor
+      }))
+    );
   }
 
   excluir(id: number): Observable<void> {

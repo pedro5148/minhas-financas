@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, Inject, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -10,6 +10,8 @@ import { MatNativeDateModule, MAT_DATE_LOCALE, provideNativeDateAdapter } from '
 import { MatButtonModule } from '@angular/material/button';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 
 import { AlertDialogComponent } from '../alert-dialog/alert-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,7 +20,10 @@ import { LancamentoService } from '../../services/lancamento.service';
 import { ContaService } from '../../services/conta.service';
 import { CategoriaService } from '../../services/categoria.service';
 import { CartaoCreditoService } from '../../services/cartao-credito.service';
-import { Conta, Categoria, Subcategoria, TipoLancamento, TipoRecorrencia, StatusLancamento, Lancamento, CartaoCredito } from '../../models/types';
+import { Conta } from '../../models/conta.model';
+import { Categoria, Subcategoria } from '../../models/categoria.model';
+import { TipoLancamento, TipoRecorrencia, StatusLancamento, LancamentoResponseDTO, LancamentoRequestDTO } from '../../models/lancamento.model';
+import { CartaoCredito } from '../../models/cartao-credito.model';
 
 @Component({
   selector: 'app-lancamento-modal',
@@ -52,10 +57,11 @@ export class LancamentoModalComponent implements OnInit {
   private cartaoService = inject(CartaoCreditoService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
-  lancamentoAtual: Lancamento | null = null;
+  lancamentoAtual: LancamentoResponseDTO | null = null;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { tipo: TipoLancamento, lancamento?: Lancamento }) {
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { tipo: TipoLancamento, lancamento?: LancamentoResponseDTO }) {
     this.tipo = data.tipo;
     this.lancamentoAtual = data.lancamento || null;
   }
@@ -91,7 +97,7 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('categoria')?.setValidators(Validators.required);
     }
 
-    this.form.get('categoria')?.valueChanges.subscribe(cat => {
+    this.form.get('categoria')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(cat => {
       if (cat) {
         this.subcategoriasFiltradas = this.subcategorias.filter(s => s.categoria.id === cat.id);
       } else {
@@ -100,7 +106,7 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('subcategoria')?.setValue(null);
     });
 
-    this.form.get('tipoRecorrencia')?.valueChanges.subscribe(rec => {
+    this.form.get('tipoRecorrencia')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(rec => {
       if (rec === TipoRecorrencia.PARCELADO) {
         this.form.get('totalParcelas')?.setValidators([Validators.required, Validators.min(2)]);
       } else {
@@ -109,13 +115,13 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('totalParcelas')?.updateValueAndValidity();
     });
 
-    this.form.get('dataEfetivacao')?.valueChanges.subscribe(data => {
+    this.form.get('dataEfetivacao')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
       if (data && this.form.get('status')?.value !== StatusLancamento.EFETIVADO) {
         this.form.get('status')?.setValue(StatusLancamento.EFETIVADO);
       }
     });
 
-    this.form.get('status')?.valueChanges.subscribe(status => {
+    this.form.get('status')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       if (status === StatusLancamento.EFETIVADO) {
         this.form.get('dataEfetivacao')?.setValidators(Validators.required);
       } else {
@@ -124,7 +130,7 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('dataEfetivacao')?.updateValueAndValidity({ emitEvent: false });
     });
 
-    this.form.get('cartaoCredito')?.valueChanges.subscribe(cartao => {
+    this.form.get('cartaoCredito')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(cartao => {
       if (cartao && cartao.contaPadrao) {
         const contaEncontrada = this.contas.find(c => c.id === cartao.contaPadrao.id);
         if (contaEncontrada) {
@@ -135,50 +141,69 @@ export class LancamentoModalComponent implements OnInit {
   }
 
   carregarDadosBase() {
-    this.contaService.listarTodos().subscribe(res => {
-      this.contas = res;
-      
-      if (this.lancamentoAtual?.conta) {
-        this.form.get('conta')?.setValue(this.contas.find(c => c.id === this.lancamentoAtual!.conta.id) || null);
-      } else if (!this.form.get('conta')?.value) {
-        const contaPadrao = this.contas.find(c => c.padrao === true);
-        if (contaPadrao) {
-          this.form.get('conta')?.setValue(contaPadrao);
-        }
-      }
-
-      if (this.lancamentoAtual?.contaDestino) {
-        this.form.get('contaDestino')?.setValue(this.contas.find(c => c.id === this.lancamentoAtual!.contaDestino!.id) || null);
-      }
-    });
+    const requisicoes: any = {
+      contas: this.contaService.listarTodos()
+    };
 
     if (this.tipo === TipoLancamento.DESPESA) {
-      this.cartaoService.listarTodos().subscribe(res => {
-        this.cartoes = res;
-        if (this.lancamentoAtual?.cartaoCredito) {
-          this.form.get('cartaoCredito')?.setValue(this.cartoes.find(c => c.id === this.lancamentoAtual!.cartaoCredito!.id) || null);
-        }
-      });
+      requisicoes.cartoes = this.cartaoService.listarTodos();
     }
 
     if (this.tipo !== TipoLancamento.TRANSFERENCIA) {
-      this.categoriaService.listarCategorias().subscribe(res => {
-        this.categorias = res;
-        if (this.lancamentoAtual?.categoria) {
-          this.form.get('categoria')?.setValue(this.categorias.find(c => c.id === this.lancamentoAtual!.categoria!.id) || null);
+      requisicoes.categorias = this.categoriaService.listarCategorias();
+      requisicoes.subcategorias = this.categoriaService.listarSubcategorias();
+    }
+
+    forkJoin(requisicoes)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res: any) => {
+        // Tratar Contas
+        this.contas = res.contas;
+        if (this.lancamentoAtual?.conta) {
+          this.form.get('conta')?.setValue(this.contas.find((c: Conta) => c.id === this.lancamentoAtual!.conta!.id) || null);
+        } else if (!this.form.get('conta')?.value) {
+          const contaPadrao = this.contas.find((c: Conta) => c.padrao === true);
+          if (contaPadrao) {
+            this.form.get('conta')?.setValue(contaPadrao);
+          }
         }
-      });
-      this.categoriaService.listarSubcategorias().subscribe(res => {
-        this.subcategorias = res;
-        if (this.lancamentoAtual?.subcategoria) {
-          const sub = this.subcategorias.find(s => s.id === this.lancamentoAtual!.subcategoria!.id);
-          if (sub) {
-            this.subcategoriasFiltradas = this.subcategorias.filter(s => s.categoria.id === sub.categoria.id);
-            this.form.get('subcategoria')?.setValue(sub);
+
+        if (this.lancamentoAtual?.contaDestino) {
+          this.form.get('contaDestino')?.setValue(this.contas.find((c: Conta) => c.id === this.lancamentoAtual!.contaDestino!.id) || null);
+        }
+
+        // Tratar Cartões
+        if (res.cartoes) {
+          this.cartoes = res.cartoes;
+          if (this.lancamentoAtual?.cartaoCredito) {
+            this.form.get('cartaoCredito')?.setValue(this.cartoes.find((c: CartaoCredito) => c.id === this.lancamentoAtual!.cartaoCredito!.id) || null);
+          }
+        }
+
+        // Tratar Categorias e Subcategorias
+        if (res.categorias && res.subcategorias) {
+          this.categorias = res.categorias;
+          if (this.lancamentoAtual?.categoria) {
+            this.form.get('categoria')?.setValue(this.categorias.find((c: Categoria) => c.id === this.lancamentoAtual!.categoria!.id) || null);
+          }
+
+          this.subcategorias = res.subcategorias;
+          if (this.lancamentoAtual?.subcategoria) {
+            const sub = this.subcategorias.find((s: Subcategoria) => s.id === this.lancamentoAtual!.subcategoria!.id);
+            if (sub) {
+              this.subcategoriasFiltradas = this.subcategorias.filter((s: Subcategoria) => s.categoria.id === sub.categoria.id);
+              this.form.get('subcategoria')?.setValue(sub);
+            }
           }
         }
       });
-    }
+  }
+
+  private formatarData(data: Date): string {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
   }
 
   salvar() {
@@ -211,19 +236,18 @@ export class LancamentoModalComponent implements OnInit {
     }
 
     const values = this.form.getRawValue();
-    const lancamento: any = {
-      id: this.lancamentoAtual?.id,
+    const lancamento: LancamentoRequestDTO = {
       tipo: this.tipo,
       descricao: values.descricao,
       valor: values.valor,
-      conta: values.conta,
-      contaDestino: this.tipo === TipoLancamento.TRANSFERENCIA ? values.contaDestino : null,
-      cartaoCredito: this.tipo === TipoLancamento.DESPESA ? values.cartaoCredito : null,
-      categoria: this.tipo !== TipoLancamento.TRANSFERENCIA ? values.categoria : null,
-      subcategoria: values.subcategoria,
-      dataLancamento: values.dataLancamento.toISOString().split('T')[0],
-      dataVencimento: values.dataVencimento.toISOString().split('T')[0],
-      dataEfetivacao: values.dataEfetivacao ? values.dataEfetivacao.toISOString().split('T')[0] : null,
+      contaId: values.conta?.id,
+      contaDestinoId: this.tipo === TipoLancamento.TRANSFERENCIA ? values.contaDestino?.id : null,
+      cartaoCreditoId: this.tipo === TipoLancamento.DESPESA ? values.cartaoCredito?.id : null,
+      categoriaId: this.tipo !== TipoLancamento.TRANSFERENCIA ? values.categoria?.id : null,
+      subcategoriaId: values.subcategoria?.id,
+      dataLancamento: values.dataLancamento ? this.formatarData(values.dataLancamento) : '',
+      dataVencimento: values.dataVencimento ? this.formatarData(values.dataVencimento) : '',
+      dataEfetivacao: values.dataEfetivacao ? this.formatarData(values.dataEfetivacao) : null,
       observacoes: values.observacoes,
       tipoRecorrencia: values.tipoRecorrencia,
       totalParcelas: values.tipoRecorrencia === TipoRecorrencia.PARCELADO ? values.totalParcelas : null,
@@ -234,8 +258,11 @@ export class LancamentoModalComponent implements OnInit {
       ? this.lancamentoService.atualizar(this.lancamentoAtual.id, lancamento)
       : this.lancamentoService.criar(lancamento);
 
-    request$.subscribe({
-      next: () => this.dialogRef.close(true),
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.lancamentoService.notificarAlteracao();
+        this.dialogRef.close(true);
+      },
       error: (err: any) => console.error(err)
     });
   }

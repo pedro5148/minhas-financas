@@ -1,7 +1,9 @@
 package com.example.backend.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
@@ -9,11 +11,14 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "cartoes_credito")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class CartaoCredito {
 
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,7 +36,11 @@ public class CartaoCredito {
     private Integer diaVencimento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conta_padrao_id", nullable = false)
+    @JoinColumn(
+            name = "conta_padrao_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_cartoes_credito_conta_padrao_id")
+    )
     private Conta contaPadrao;
 
     @Column(length = 50)

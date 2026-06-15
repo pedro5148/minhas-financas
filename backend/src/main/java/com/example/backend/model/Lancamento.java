@@ -4,20 +4,21 @@ import com.example.backend.enums.StatusLancamento;
 import com.example.backend.enums.TipoLancamento;
 import com.example.backend.enums.TipoRecorrencia;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "lancamentos")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Lancamento {
 
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,19 +34,32 @@ public class Lancamento {
     private BigDecimal valor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conta_id", nullable = false)
+    @JoinColumn(
+            name = "conta_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_lancamentos_conta_id")
+    )
     private Conta conta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conta_destino_id")
+    @JoinColumn(
+            name = "conta_destino_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_conta_destino_id")
+    )
     private Conta contaDestino; // Apenas para transferências
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id")
+    @JoinColumn(
+            name = "categoria_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_categoria_id")
+    )
     private Categoria categoria; // Pode ser nulo se for transferência
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subcategoria_id")
+    @JoinColumn(
+            name = "subcategoria_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_subcategoria_id")
+    )
     private Subcategoria subcategoria;
 
     @Column(name = "data_lancamento", nullable = false)
@@ -75,10 +89,16 @@ public class Lancamento {
     private Integer totalParcelas;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cartao_id")
+    @JoinColumn(
+            name = "cartao_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_cartao_id")
+    )
     private CartaoCredito cartaoCredito;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fatura_id")
+    @JoinColumn(
+            name = "fatura_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_fatura_id")
+    )
     private Fatura fatura;
 }

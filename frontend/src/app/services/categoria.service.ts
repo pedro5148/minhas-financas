@@ -1,24 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Categoria, Subcategoria } from '../models/types';
+import { Categoria, Subcategoria, CategoriaRequestDTO, SubcategoriaRequestDTO } from '../models/categoria.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CategoriaService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8082/api';
+  private apiUrl = `${environment.apiUrl}`;
 
   listarCategorias(): Observable<Categoria[]> {
     return this.http.get<Categoria[]>(`${this.apiUrl}/categorias`);
   }
 
-  atualizarCategoria(id: number, categoriaRequest: any): Observable<Categoria> {
+  atualizarCategoria(id: number, categoriaRequest: CategoriaRequestDTO): Observable<Categoria> {
     return this.http.put<Categoria>(`${this.apiUrl}/categorias/${id}`, categoriaRequest);
   }
 
-  criarCategoria(categoriaRequest: any): Observable<Categoria> {
+  criarCategoria(categoriaRequest: CategoriaRequestDTO): Observable<Categoria> {
     return this.http.post<Categoria>(`${this.apiUrl}/categorias`, categoriaRequest);
   }
 
@@ -35,7 +36,8 @@ export class CategoriaService {
   }
 
   criarSubcategoria(categoriaId: number, nome: string): Observable<Subcategoria> {
-    return this.http.post<Subcategoria>(`${this.apiUrl}/subcategorias`, { categoriaId, nome });
+    const request: SubcategoriaRequestDTO = { categoriaId, nome };
+    return this.http.post<Subcategoria>(`${this.apiUrl}/subcategorias`, request);
   }
 
   excluirSubcategoria(id: number): Observable<any> {

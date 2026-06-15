@@ -478,3 +478,12 @@ h1, h2, h3, h4, h5, h6 {
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
 .text-warning { color: var(--warning); }
+
+/* Error Snackbar Global Styles */
+.error-snackbar {
+  --mdc-snackbar-container-color: var(--danger) !important;
+  --mat-snack-bar-button-color: #ffffff !important;
+  --mdc-snackbar-supporting-text-color: #ffffff !important;
+  font-family: var(--font-body);
+  font-weight: 500;
+}

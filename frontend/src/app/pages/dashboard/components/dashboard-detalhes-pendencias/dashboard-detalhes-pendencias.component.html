@@ -1,0 +1,37 @@
+<div class="details-cards">
+  <mat-card class="detail-card border-danger">
+    <mat-card-content>
+      <div class="icon-container bg-danger-light">
+        <mat-icon class="text-danger">arrow_downward</mat-icon>
+      </div>
+      <div class="info">
+        <p class="label">Despesas Pendentes</p>
+        <h4 class="text-danger">{{ totalDespesasPendentes | currency:'BRL':'symbol' }}</h4>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="detail-card border-success">
+    <mat-card-content>
+      <div class="icon-container bg-success-light">
+        <mat-icon class="text-success">arrow_upward</mat-icon>
+      </div>
+      <div class="info">
+        <p class="label">Receitas Pendentes</p>
+        <h4 class="text-success">{{ totalReceitasPendentes | currency:'BRL':'symbol' }}</h4>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="detail-card border-warning">
+    <mat-card-content>
+      <div class="icon-container bg-warning-light">
+        <mat-icon class="text-warning">swap_horiz</mat-icon>
+      </div>
+      <div class="info">
+        <p class="label">Transferências</p>
+        <h4 class="text-warning">{{ totalTransferencias | currency:'BRL':'symbol' }}</h4>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

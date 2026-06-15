@@ -1,6 +1,6 @@
 package com.example.backend.controller;
 
-import com.example.backend.model.Fatura;
+import com.example.backend.dto.FaturaResponseDTO;
 import com.example.backend.service.FaturaService;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +18,12 @@ public class FaturaController {
     }
 
     @GetMapping("/cartao/{cartaoId}")
-    public List<Fatura> buscarPorCartao(@PathVariable Long cartaoId) {
+    public List<FaturaResponseDTO> buscarPorCartao(@PathVariable Long cartaoId) {
         return service.buscarPorCartao(cartaoId);
     }
 
     @PostMapping("/{id}/pagar")
-    public Fatura pagarFatura(@PathVariable Long id) {
+    public FaturaResponseDTO pagarFatura(@PathVariable Long id) {
         return service.pagarFatura(id);
     }
 }

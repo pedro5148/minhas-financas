@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,7 +6,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatRippleModule } from '@angular/material/core';
-import { CartaoCredito, Fatura } from '../../../../models/types';
+import { BehaviorSubject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+import { CartaoCredito } from '../../../../models/cartao-credito.model';
+import { Fatura } from '../../../../models/fatura.model';
 import { FaturaService } from '../../../../services/fatura.service';
 import { FaturaModalComponent } from '../fatura-modal/fatura-modal.component';
 
@@ -22,31 +27,42 @@ export class CartaoCardComponent implements OnInit {
 
   private faturaService = inject(FaturaService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   faturaAtual: Fatura | null = null;
   limiteUsado: number = 0;
   limiteDisponivel: number = 0;
   percentualUsado: number = 0;
 
-  ngOnInit() {
-    this.carregarFaturaAtual();
-  }
+  private reloadTrigger = new BehaviorSubject<void>(undefined);
 
-  carregarFaturaAtual() {
-    if (this.cartao && this.cartao.id) {
-      this.faturaService.buscarPorCartao(this.cartao.id).subscribe(faturas => {
+  ngOnInit() {
+    const cartaoId = this.cartao?.id;
+    if (cartaoId) {
+      this.reloadTrigger.pipe(
+        takeUntilDestroyed(this.destroyRef),
+        switchMap(() => this.faturaService.buscarPorCartao(cartaoId))
+      ).subscribe(faturas => {
         this.faturaAtual = faturas.find(f => f.status === 'ABERTA') || faturas[0] || null;
         this.calcularLimites(faturas);
       });
     }
   }
 
-  calcularLimites(faturas: Fatura[]) {
-    this.limiteUsado = faturas
-      .filter(f => f.status !== 'PAGA')
-      .reduce((sum, f) => sum + (f.valorTotal - f.valorPago), 0);
+  carregarFaturaAtual() {
+    this.reloadTrigger.next();
+  }
 
-    this.limiteDisponivel = this.cartao.limiteTotal - this.limiteUsado;
+  calcularLimites(faturas: Fatura[]) {
+    const limiteUsadoCents = faturas
+      .filter(f => f.status !== 'PAGA')
+      .reduce((sum, f) => sum + (Math.round(f.valorTotal * 100) - Math.round(f.valorPago * 100)), 0);
+
+    const limiteTotalCents = Math.round(this.cartao.limiteTotal * 100);
+    const limiteDisponivelCents = limiteTotalCents - limiteUsadoCents;
+
+    this.limiteUsado = limiteUsadoCents / 100;
+    this.limiteDisponivel = limiteDisponivelCents / 100;
     this.percentualUsado = (this.limiteUsado / this.cartao.limiteTotal) * 100;
   }
 
@@ -62,7 +78,7 @@ export class CartaoCardComponent implements OnInit {
       }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       if (result) {
         this.carregarFaturaAtual();
       }

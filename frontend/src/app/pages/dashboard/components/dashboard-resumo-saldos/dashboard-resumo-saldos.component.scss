@@ -1,0 +1,57 @@
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+.saldo-inicial-card::before {
+  background-color: #3b82f6; /* blue-500 */
+}
+.saldo-atual-card::before {
+  background-color: #10b981; /* emerald-500 */
+}
+.saldo-previsto-card::before {
+  background-color: #8b5cf6; /* violet-500 */
+}
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.summary-card mat-card-content {
+  padding: 24px;
+}
+.label {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+h3 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+.text-danger {
+  color: var(--color-danger, #ef4444);
+}
+.text-success {
+  color: var(--color-success, #10b981);
+}
