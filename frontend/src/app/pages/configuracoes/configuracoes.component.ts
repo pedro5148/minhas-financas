@@ -20,6 +20,7 @@ import { Categoria } from '../../models/categoria.model';
 
 import { ContaModalComponent } from '../../components/conta-modal/conta-modal.component';
 import { CategoriaModalComponent } from '../../components/categoria-modal/categoria-modal.component';
+import { ImportacaoModalComponent } from '../../components/importacao-modal/importacao-modal.component';
 
 @Component({
   selector: 'app-configuracoes',
@@ -161,5 +162,15 @@ export class ConfiguracoesComponent implements OnInit {
         }
       });
     }
+  }
+
+  abrirModalImportacao() {
+    this.dialog.open(ImportacaoModalComponent, {
+      width: '850px',
+      maxWidth: '95vw',
+      disableClose: true,
+      panelClass: 'custom-dialog-container',
+      autoFocus: false
+    });
   }
 }

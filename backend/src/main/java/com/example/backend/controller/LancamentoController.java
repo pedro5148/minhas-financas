@@ -3,10 +3,14 @@ package com.example.backend.controller;
 import com.example.backend.dto.LancamentoRequestDTO;
 import com.example.backend.dto.LancamentoResponseDTO;
 import com.example.backend.service.LancamentoService;
+import com.example.backend.enums.TipoLancamento;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/lancamentos")
@@ -20,8 +24,11 @@ public class LancamentoController {
     }
 
     @GetMapping
-    public List<LancamentoResponseDTO> listarTodos() {
-        return service.listarTodos();
+    public ResponseEntity<Page<LancamentoResponseDTO>> listar(
+            @RequestParam(required = false) String descricao,
+            @RequestParam(required = false) TipoLancamento tipo,
+            Pageable pageable) {
+        return ResponseEntity.ok(service.listar(descricao, tipo, pageable));
     }
     
     @GetMapping("/mes/{ano}/{mes}")
@@ -37,6 +44,11 @@ public class LancamentoController {
     @PostMapping
     public List<LancamentoResponseDTO> criar(@Valid @RequestBody LancamentoRequestDTO dto) {
         return service.criarLancamentos(dto);
+    }
+
+    @PostMapping("/lote")
+    public List<LancamentoResponseDTO> importarLote(@Valid @RequestBody List<LancamentoRequestDTO> lote) {
+        return service.importarLote(lote);
     }
 
     @PutMapping("/{id}")

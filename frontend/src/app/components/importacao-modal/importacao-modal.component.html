@@ -1,0 +1,183 @@
+<h2 mat-dialog-title>Assistente de Importação CSV</h2>
+
+<mat-dialog-content>
+  <!-- ETAPA 1: Upload de Arquivo -->
+  <div class="step-container" *ngIf="!arquivoCarregado()">
+    <h3>1. O que vamos importar?</h3>
+    <p>Selecione o tipo de lançamentos contidos neste ficheiro:</p>
+    
+    <mat-radio-group [value]="tipoGlobal()" (change)="tipoGlobal.set($event.value)" class="radio-group-tipo">
+      <mat-radio-button [value]="tiposLancamento.DESPESA">Despesas</mat-radio-button>
+      <mat-radio-button [value]="tiposLancamento.RECEITA">Receitas</mat-radio-button>
+    </mat-radio-group>
+
+    <div class="upload-section mt-16">
+      <p>Faça o upload do extrato bancário ou planilha financeira em formato .csv</p>
+      <input type="file" #fileInput (change)="onFileSelected($event)" accept=".csv" style="display: none;">
+      <button mat-raised-button color="primary" (click)="fileInput.click()" class="upload-button">
+        <mat-icon>upload_file</mat-icon>
+        Selecionar Arquivo CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="loaded-file-info" *ngIf="arquivoCarregado()">
+    <mat-icon color="primary">check_circle</mat-icon> Arquivo CSV lido com sucesso (Tipo: {{ tipoGlobal() === tiposLancamento.DESPESA ? 'Despesas' : 'Receitas' }}).
+  </div>
+
+  <!-- ETAPA 2: Mapeamento de Colunas -->
+  <div class="step-container" *ngIf="arquivoCarregado()">
+    <h3>2. Associação de Colunas</h3>
+    <p>Associe os campos do sistema com as respetivas colunas do seu CSV.</p>
+    
+    <form [formGroup]="mappingForm" class="mapping-list">
+      
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Data do Lançamento</strong> <span class="required">*</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="dataLancamento" placeholder="Escolha a coluna do CSV...">
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Descrição</strong> <span class="required">*</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="descricao" placeholder="Escolha a coluna do CSV...">
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Valor</strong> <span class="required">*</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="valor" placeholder="Escolha a coluna do CSV...">
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Conta Bancária</strong> <span class="optional">(Opcional)</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="conta" placeholder="Não associar do CSV">
+              <mat-option [value]="null">-- Não associar do CSV --</mat-option>
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Categoria</strong> <span class="optional">(Opcional)</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="categoria" placeholder="Não associar do CSV">
+              <mat-option [value]="null">-- Não associar do CSV --</mat-option>
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ETAPA 3: Mapeamento de Relacionamentos -->
+  <div class="step-container" *ngIf="nomesContaCsv().length > 0 || nomesCategoriaCsv().length > 0">
+    <div class="intro-block">
+      <p class="humanized-text">
+        Identificamos nomes de contas e categorias dentro do seu arquivo. Para que os saldos e gráficos fiquem corretos, informe a qual item do sistema cada texto do arquivo corresponde.
+      </p>
+    </div>
+    
+    <div *ngIf="nomesContaCsv().length > 0" class="relational-group">
+      <h3>Vincular Contas do Arquivo</h3>
+      <div class="relational-list">
+        <div class="relational-row" *ngFor="let nomeCsv of nomesContaCsv()">
+          <div class="csv-badge-container">
+            <span class="csv-badge">{{ nomeCsv }}</span>
+          </div>
+          <div class="connector-text">
+            será lançado na conta
+          </div>
+          <div class="system-select">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-select [value]="mapeamentoContas()[nomeCsv]" (selectionChange)="associarConta(nomeCsv, $event.value)" placeholder="Escolha a conta real...">
+                <mat-option *ngFor="let conta of contas()" [value]="conta.id">{{ conta.nome }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="nomesCategoriaCsv().length > 0" class="relational-group">
+      <h3>Vincular Categorias do Arquivo</h3>
+      <div class="relational-list">
+        <div class="relational-row" *ngFor="let nomeCsv of nomesCategoriaCsv()">
+          <div class="csv-badge-container">
+            <span class="csv-badge">{{ nomeCsv }}</span>
+          </div>
+          <div class="connector-text">
+            será classificado em
+          </div>
+          <div class="system-select">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-select [value]="mapeamentoCategorias()[nomeCsv]" (selectionChange)="onCategoriaSelectionChange($event, nomeCsv)" placeholder="Escolha a categoria real...">
+                <mat-option value="NEW" class="create-new-option" style="color: var(--mat-sys-primary, #3f51b5); font-weight: 500;">
+                  <mat-icon color="primary">add</mat-icon> Criar nova categoria
+                </mat-option>
+                <mat-option *ngFor="let categoria of categorias()" [value]="categoria.id">{{ categoria.nome }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="fechar()" [disabled]="isCarregando()">Cancelar</button>
+  <button mat-raised-button color="primary" 
+          [disabled]="mappingForm.invalid || !arquivoCarregado() || isCarregando()" 
+          (click)="processar()">
+    {{ isCarregando() ? 'Processando...' : 'Processar Importação' }}
+  </button>
+</mat-dialog-actions>

@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LancamentoResponseDTO, LancamentoRequestDTO } from '../models/lancamento.model';
+import { Page } from '../models/page.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -26,9 +27,25 @@ export class LancamentoService {
     }));
   }
 
-  listarTodos(): Observable<LancamentoResponseDTO[]> {
-    return this.http.get<LancamentoResponseDTO[]>(this.apiUrl).pipe(
-      map(res => this.parseValores(res))
+  listar(page: number = 0, size: number = 10, sort: string = 'dataLancamento,desc', descricao?: string, tipo?: string | null): Observable<Page<LancamentoResponseDTO>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sort', sort);
+
+    if (descricao) {
+      params = params.set('descricao', descricao);
+    }
+    
+    if (tipo) {
+      params = params.set('tipo', tipo);
+    }
+
+    return this.http.get<Page<LancamentoResponseDTO>>(this.apiUrl, { params }).pipe(
+      map(pageObj => ({
+        ...pageObj,
+        content: this.parseValores(pageObj.content)
+      }))
     );
   }
 
@@ -46,6 +63,10 @@ export class LancamentoService {
 
   criar(lancamento: LancamentoRequestDTO): Observable<LancamentoResponseDTO[]> {
     return this.http.post<LancamentoResponseDTO[]>(this.apiUrl, lancamento);
+  }
+
+  importarEmLote(lancamentos: LancamentoRequestDTO[]): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/lote`, lancamentos);
   }
 
   atualizar(id: number, lancamento: LancamentoRequestDTO): Observable<LancamentoResponseDTO> {
