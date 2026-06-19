@@ -9,6 +9,7 @@ export interface CartaoCredito {
   contaPadrao: Conta;
   bandeira?: string;
   principal?: boolean;
+  valorFatura?: number;
 }
 
 export interface CartaoCreditoRequestDTO {

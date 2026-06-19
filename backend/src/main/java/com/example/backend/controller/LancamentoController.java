@@ -27,8 +27,10 @@ public class LancamentoController {
     public ResponseEntity<Page<LancamentoResponseDTO>> listar(
             @RequestParam(required = false) String descricao,
             @RequestParam(required = false) TipoLancamento tipo,
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano,
             Pageable pageable) {
-        return ResponseEntity.ok(service.listar(descricao, tipo, pageable));
+        return ResponseEntity.ok(service.listar(descricao, tipo, mes, ano, pageable));
     }
     
     @GetMapping("/mes/{ano}/{mes}")

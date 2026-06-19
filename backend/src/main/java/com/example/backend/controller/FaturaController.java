@@ -22,6 +22,11 @@ public class FaturaController {
         return service.buscarPorCartao(cartaoId);
     }
 
+    @GetMapping("/cartao/{cartaoId}/proximas")
+    public List<FaturaResponseDTO> projetarProximasFaturas(@PathVariable Long cartaoId) {
+        return service.projetarProximasFaturas(cartaoId);
+    }
+
     @PostMapping("/{id}/pagar")
     public FaturaResponseDTO pagarFatura(@PathVariable Long id) {
         return service.pagarFatura(id);

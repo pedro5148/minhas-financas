@@ -172,6 +172,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Form Fields Material styling fallbacks */
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel,
+.mat-mdc-menu-panel {
+  background-color: var(--bg-secondary) !important;
+}
+
 .mat-mdc-option {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;

@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = {CategoriaMapper.class})
 public interface SubcategoriaMapper {
     @Mapping(target = "categoria.id", source = "categoriaId")
+    @Mapping(target = "id", ignore = true)
     Subcategoria toEntity(SubcategoriaRequestDTO dto);
     
     SubcategoriaResponseDTO toResponseDTO(Subcategoria entity);

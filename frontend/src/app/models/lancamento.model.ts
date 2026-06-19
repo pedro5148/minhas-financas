@@ -47,7 +47,6 @@ export interface LancamentoRequestDTO {
   valor: number;
   contaId: number;
   contaDestinoId?: number | null;
-  categoriaId?: number | null;
   subcategoriaId?: number | null;
   dataLancamento: string;
   dataVencimento: string;
@@ -57,4 +56,7 @@ export interface LancamentoRequestDTO {
   tipoRecorrencia: TipoRecorrencia;
   totalParcelas?: number | null;
   cartaoCreditoId?: number | null;
+  faturaId?: number | null;
+  mesFatura?: number | null;
+  anoFatura?: number | null;
 }

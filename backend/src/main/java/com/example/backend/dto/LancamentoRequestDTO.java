@@ -25,7 +25,6 @@ public class LancamentoRequestDTO {
     private Long contaId;
 
     private Long contaDestinoId;
-    private Long categoriaId;
     private Long subcategoriaId;
 
     @NotNull(message = "A data de lançamento é obrigatória")
@@ -48,4 +47,6 @@ public class LancamentoRequestDTO {
     private Integer totalParcelas;
     private Long cartaoCreditoId;
     private Long faturaId;
+    private Integer mesFatura;
+    private Integer anoFatura;
 }

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject, DestroyRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,8 +22,9 @@ import { FaturaModalComponent } from '../fatura-modal/fatura-modal.component';
   templateUrl: './cartao-card.component.html',
   styleUrl: './cartao-card.component.scss'
 })
-export class CartaoCardComponent implements OnInit {
+export class CartaoCardComponent implements OnInit, OnChanges {
   @Input() cartao!: CartaoCredito;
+  @Input() mesAnoSelecionado!: { mes: number, ano: number } | null;
 
   private faturaService = inject(FaturaService);
   private dialog = inject(MatDialog);
@@ -37,20 +38,32 @@ export class CartaoCardComponent implements OnInit {
   private reloadTrigger = new BehaviorSubject<void>(undefined);
 
   ngOnInit() {
+    this.carregarDadosIniciais();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if ((changes['cartao'] && !changes['cartao'].firstChange) || (changes['mesAnoSelecionado'] && !changes['mesAnoSelecionado'].firstChange)) {
+      this.carregarDadosIniciais();
+    }
+  }
+
+  carregarDadosIniciais() {
     const cartaoId = this.cartao?.id;
     if (cartaoId) {
-      this.reloadTrigger.pipe(
-        takeUntilDestroyed(this.destroyRef),
-        switchMap(() => this.faturaService.buscarPorCartao(cartaoId))
-      ).subscribe(faturas => {
-        this.faturaAtual = faturas.find(f => f.status === 'ABERTA') || faturas[0] || null;
+      this.faturaService.buscarPorCartao(cartaoId).subscribe(faturas => {
+        let faturaEncontrada = null;
+        if (this.mesAnoSelecionado) {
+          const mesAnoStr = `${this.mesAnoSelecionado.mes.toString().padStart(2, '0')}/${this.mesAnoSelecionado.ano}`;
+          faturaEncontrada = faturas.find(f => f.mesAno === mesAnoStr);
+        }
+        this.faturaAtual = faturaEncontrada || faturas.find(f => f.status === 'ABERTA') || faturas[0] || null;
         this.calcularLimites(faturas);
       });
     }
   }
 
   carregarFaturaAtual() {
-    this.reloadTrigger.next();
+    this.carregarDadosIniciais();
   }
 
   calcularLimites(faturas: Fatura[]) {

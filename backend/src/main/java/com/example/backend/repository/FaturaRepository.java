@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface FaturaRepository extends JpaRepository<Fatura, Long> {
     List<Fatura> findByCartaoId(Long cartaoId);
     Optional<Fatura> findByCartaoIdAndMesAno(Long cartaoId, String mesAno);
+    List<Fatura> findByMesAno(String mesAno);
 }

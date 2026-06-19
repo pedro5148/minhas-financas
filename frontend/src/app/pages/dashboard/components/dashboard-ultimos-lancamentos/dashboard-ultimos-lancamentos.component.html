@@ -9,6 +9,7 @@
           <tr>
             <th>Descrição</th>
             <th>Data</th>
+            <th>Cartão?</th>
             <th>Valor</th>
             <th style="width: 50px;">Ações</th>
           </tr>
@@ -17,6 +18,10 @@
           <tr *ngFor="let l of lancamentos" (click)="onRowClick(l)" style="cursor: pointer;" class="clickable-row">
             <td><strong class="item-title">{{ l.descricao }}</strong></td>
             <td>{{ l.dataLancamento | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span *ngIf="l.cartaoCredito" class="badge" style="background-color: #6366f1; color: white;">Sim</span>
+              <span *ngIf="!l.cartaoCredito" class="badge" style="background-color: #e2e8f0; color: #64748b;">Não</span>
+            </td>
             <td>
               <span class="badge" [ngClass]="tipoBadge">
                 {{ tipoBadge === 'receita' ? '+' : '-' }}{{ l.valor | currency:'BRL':'symbol' }}
@@ -29,7 +34,7 @@
             </td>
           </tr>
           <tr *ngIf="lancamentos.length === 0">
-            <td colspan="4" class="empty-state">Nenhum lançamento no período</td>
+            <td colspan="5" class="empty-state">Nenhum lançamento no período</td>
           </tr>
         </tbody>
       </table>

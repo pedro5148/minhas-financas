@@ -16,11 +16,13 @@ import org.mapstruct.Mapping;
 public interface LancamentoMapper {
     @Mapping(target = "conta.id", source = "contaId")
     @Mapping(target = "contaDestino.id", source = "contaDestinoId")
-    @Mapping(target = "categoria.id", source = "categoriaId")
     @Mapping(target = "subcategoria.id", source = "subcategoriaId")
-    @Mapping(target = "cartaoCredito.id", source = "cartaoCreditoId")
     @Mapping(target = "fatura.id", source = "faturaId")
+    @Mapping(target = "id", ignore = true)
     Lancamento toEntity(LancamentoRequestDTO dto);
     
+    @Mapping(target = "categoria", source = "subcategoria.categoria")
+    @Mapping(target = "cartaoCredito", source = "fatura.cartao")
+    @Mapping(target = "nomeCartao", source = "fatura.cartao.nome")
     LancamentoResponseDTO toResponseDTO(Lancamento entity);
 }

@@ -14,4 +14,5 @@ public class CartaoCreditoResponseDTO {
     private ContaResponseDTO contaPadrao;
     private String bandeira;
     private Boolean principal;
+    private BigDecimal valorFatura;
 }

@@ -1,0 +1,16 @@
+<div class="seletor-mes-container">
+  <header class="seletor-header">
+    <button mat-icon-button (click)="mudarMes(-1)" class="month-nav-btn" [disabled]="!isMesEspecifico">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <h2 class="month-title">{{ getNomeMesAno() }}</h2>
+    <button mat-icon-button (click)="mudarMes(1)" class="month-nav-btn" [disabled]="!isMesEspecifico">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </header>
+  <div class="visao-anual-toggle" *ngIf="permitirVisaoAnual">
+    <a class="toggle-link" (click)="toggleVisaoAnual()">
+      {{ isMesEspecifico ? 'Ver Visão Anual' : 'Selecionar Mês Específico' }}
+    </a>
+  </div>
+</div>

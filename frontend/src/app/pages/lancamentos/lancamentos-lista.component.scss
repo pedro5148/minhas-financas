@@ -23,9 +23,10 @@
   }
 
   .table-container {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background-color: var(--bg-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    box-shadow: none;
     overflow: hidden;
 
     .context-tabs {
@@ -34,62 +35,106 @@
 
     table {
       width: 100%;
-      
-      .mat-column-dataLancamento { width: 120px; }
-      .mat-column-descricao { width: auto; }
-      .mat-column-categoria, .mat-column-conta { width: 160px; }
-      
+      background-color: transparent !important;
+
+      .mat-column-dataLancamento {
+        width: 120px;
+      }
+
+      .mat-column-descricao {
+        width: auto;
+      }
+
+      .mat-column-categoria,
+      .mat-column-conta {
+        width: 160px;
+      }
+
       .mat-column-valor {
         text-align: right;
         padding-right: 24px;
         width: 120px;
       }
-      
+
       th.mat-column-valor {
         text-align: right;
       }
-      
+
       .mat-column-acoes {
         text-align: center;
         width: 100px;
       }
 
-      tr.mat-mdc-row, tr.mat-mdc-header-row {
-        border-bottom: none !important;
+      th.mat-mdc-header-cell {
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        padding: 12px 16px;
       }
 
-      tr.mat-mdc-row:nth-child(even) {
-        background-color: #fafafa;
+      td.mat-mdc-cell {
+        padding: 12px 16px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      tr.mat-mdc-row,
+      tr.mat-mdc-header-row {
+        border-bottom: 1px solid var(--border-color) !important;
+        background-color: transparent !important;
       }
 
       tr.mat-mdc-row:hover {
-        background-color: #f0f4f8;
+        background-color: var(--bg-primary) !important;
         transition: background-color 0.2s ease;
         cursor: pointer;
       }
 
-      th.mat-mdc-header-cell, td.mat-mdc-cell {
-        padding: 12px 16px;
-      }
-
       .tag-chip {
-        border-radius: 6px;
-        font-size: 12px;
-        min-height: 24px;
-        padding: 2px 8px;
-        font-weight: 500;
+        border-radius: 9999px;
+        font-size: 11px;
+        min-height: 22px;
+        padding: 4px 12px;
+        font-weight: 700;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        
-        &.tag-categoria {
-          background-color: var(--mat-sys-surface-variant, #f0f0f0);
-          color: var(--mat-sys-on-surface-variant, #333);
+        text-transform: uppercase;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
+
+      .conta-cartao-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .cartao-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+          color: var(--text-secondary);
         }
-        
-        &.tag-conta {
-          background-color: var(--mat-sys-secondary-container, #e3f2fd);
-          color: var(--mat-sys-on-secondary-container, #1976d2);
+
+        .cartao-tag {
+          background-color: rgba(56, 189, 248, 0.1);
+          color: var(--primary-color);
+          border-color: rgba(56, 189, 248, 0.2);
+        }
+      }
+
+      .action-link {
+        font-weight: 600;
+        color: #ef4444;
+        cursor: pointer;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
         }
       }
 
@@ -105,6 +150,25 @@
       .despesa {
         color: var(--mat-sys-error, #f44336);
         font-weight: 500;
+      }
+    }
+
+    mat-paginator {
+      background-color: transparent !important;
+      color: var(--text-primary) !important;
+      border-top: 1px solid var(--border-color);
+
+      ::ng-deep .mat-mdc-paginator-container {
+        background-color: transparent !important;
+        color: var(--text-primary);
+      }
+
+      ::ng-deep .mat-mdc-paginator-icon {
+        fill: var(--text-primary);
+      }
+
+      ::ng-deep .mat-mdc-select-value-text {
+        color: var(--text-primary);
       }
     }
   }

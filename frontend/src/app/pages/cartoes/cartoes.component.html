@@ -11,6 +11,8 @@
     </button>
   </div>
 
+  <app-seletor-mes [dataInicial]="mesAtual" (mesAlterado)="onMesAlterado($event)"></app-seletor-mes>
+
   <div class="cartoes-grid">
     @if (cartoes.length === 0) {
       <div class="empty-state">
@@ -20,7 +22,7 @@
       </div>
     } @else {
       @for (cartao of cartoes; track cartao.id) {
-        <app-cartao-card [cartao]="cartao"></app-cartao-card>
+        <app-cartao-card [cartao]="cartao" [mesAnoSelecionado]="mesAnoSelecionado"></app-cartao-card>
       }
     }
   </div>

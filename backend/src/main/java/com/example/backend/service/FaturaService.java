@@ -13,6 +13,7 @@ import com.example.backend.repository.CartaoCreditoRepository;
 import com.example.backend.repository.FaturaRepository;
 import com.example.backend.repository.LancamentoRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,81 @@ public class FaturaService {
                 .map(mapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    public Fatura buscarPorId(Long id) {
+        return faturaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Fatura não encontrada"));
+    }
+
+    public List<FaturaResponseDTO> projetarProximasFaturas(Long cartaoId) {
+        CartaoCredito cartao = cartaoRepository.findById(cartaoId)
+                .orElseThrow(() -> new EntityNotFoundException("Cartão não encontrado"));
+
+        List<Fatura> faturasExistentes = faturaRepository.findByCartaoId(cartaoId);
+        List<FaturaResponseDTO> proximas = new java.util.ArrayList<>();
+
+        LocalDate mesReferencia = LocalDate.now();
+
+        for (int i = 0; i < 6; i++) {
+            String mesAno = mesReferencia.format(DateTimeFormatter.ofPattern("MM/yyyy"));
+            Optional<Fatura> faturaOpt = faturasExistentes.stream()
+                    .filter(f -> f.getMesAno().equals(mesAno))
+                    .findFirst();
+
+            if (faturaOpt.isPresent()) {
+                proximas.add(mapper.toResponseDTO(faturaOpt.get()));
+            } else {
+                Fatura projetada = new Fatura();
+                projetada.setCartao(cartao);
+                projetada.setMesAno(mesAno);
+                projetada.setStatus(StatusFatura.ABERTA);
+                projetada.setValorTotal(BigDecimal.ZERO);
+                projetada.setValorPago(BigDecimal.ZERO);
+                
+                LocalDate dtVencimento = LocalDate.of(mesReferencia.getYear(), mesReferencia.getMonth(), cartao.getDiaVencimento());
+                if (cartao.getDiaVencimento() < cartao.getDiaFechamento()) {
+                    dtVencimento = dtVencimento.plusMonths(1);
+                }
+                
+                projetada.setDataVencimento(dtVencimento);
+                projetada.setDataFechamento(LocalDate.of(mesReferencia.getYear(), mesReferencia.getMonth(), cartao.getDiaFechamento()));
+                
+                proximas.add(mapper.toResponseDTO(projetada));
+            }
+            mesReferencia = mesReferencia.plusMonths(1);
+        }
+        return proximas;
+    }
+
+    @Transactional
+    public Fatura obterOuCriarFaturaProjetada(Long cartaoId, Integer mes, Integer ano) {
+        String mesAno = String.format("%02d/%04d", mes, ano);
+        Optional<Fatura> faturaOpt = faturaRepository.findByCartaoIdAndMesAno(cartaoId, mesAno);
+        if (faturaOpt.isPresent()) {
+            return faturaOpt.get();
+        }
+
+        CartaoCredito cartao = cartaoRepository.findById(cartaoId)
+                .orElseThrow(() -> new EntityNotFoundException("Cartão não encontrado"));
+
+        Fatura nova = new Fatura();
+        nova.setCartao(cartao);
+        nova.setMesAno(mesAno);
+        nova.setStatus(StatusFatura.ABERTA);
+        nova.setValorTotal(BigDecimal.ZERO);
+        nova.setValorPago(BigDecimal.ZERO);
+        
+        LocalDate dtVencimento = LocalDate.of(ano, mes, cartao.getDiaVencimento());
+        if (cartao.getDiaVencimento() < cartao.getDiaFechamento()) {
+            dtVencimento = dtVencimento.plusMonths(1);
+        }
+        
+        nova.setDataVencimento(dtVencimento);
+        nova.setDataFechamento(LocalDate.of(ano, mes, cartao.getDiaFechamento()));
+
+        return faturaRepository.save(nova);
+    }
+
 
     @Transactional
     public Fatura obterOuCriarFatura(Long cartaoId, LocalDate dataCompra) {
@@ -95,6 +171,11 @@ public class FaturaService {
                 
         fatura.setValorTotal(total);
         faturaRepository.save(fatura);
+    }
+
+    @Transactional
+    public void excluirFatura(Long faturaId) {
+        faturaRepository.deleteById(faturaId);
     }
 
     @Transactional

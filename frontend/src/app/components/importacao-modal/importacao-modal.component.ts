@@ -9,6 +9,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -17,9 +18,11 @@ import { CsvImportService } from '../../services/csv-import.service';
 import { ContaService } from '../../services/conta.service';
 import { CategoriaService } from '../../services/categoria.service';
 import { LancamentoService } from '../../services/lancamento.service';
+import { CartaoCreditoService } from '../../services/cartao-credito.service';
 
 import { Conta } from '../../models/conta.model';
 import { Categoria } from '../../models/categoria.model';
+import { CartaoCredito } from '../../models/cartao-credito.model';
 import { LancamentoRequestDTO, TipoLancamento, StatusLancamento, TipoRecorrencia } from '../../models/lancamento.model';
 import { NovaCategoriaRapidaComponent } from '../nova-categoria-rapida/nova-categoria-rapida.component';
 
@@ -36,7 +39,8 @@ import { NovaCategoriaRapidaComponent } from '../nova-categoria-rapida/nova-cate
     FormsModule,
     MatSnackBarModule,
     MatIconModule,
-    MatRadioModule
+    MatRadioModule,
+    MatCheckboxModule
   ],
   templateUrl: './importacao-modal.component.html',
   styleUrl: './importacao-modal.component.scss',
@@ -49,6 +53,7 @@ export class ImportacaoModalComponent implements OnInit {
   private contaService = inject(ContaService);
   private categoriaService = inject(CategoriaService);
   private lancamentoService = inject(LancamentoService);
+  private cartaoCreditoService = inject(CartaoCreditoService);
   private snackBar = inject(MatSnackBar);
   private destroyRef = inject(DestroyRef);
   private dialog = inject(MatDialog);
@@ -62,17 +67,21 @@ export class ImportacaoModalComponent implements OnInit {
   // Entidades do banco
   contas = signal<Conta[]>([]);
   categorias = signal<Categoria[]>([]);
+  cartoes = signal<CartaoCredito[]>([]);
 
   // Dicionários de mapeamento relacional (Nome do CSV -> ID do Banco)
   mapeamentoContas = signal<Record<string, number>>({});
   mapeamentoCategorias = signal<Record<string, number>>({});
+  mapeamentoCartoes = signal<Record<string, number>>({});
 
   // Nomes únicos encontrados no CSV para Entidades
   nomesContaCsv = signal<string[]>([]);
   nomesCategoriaCsv = signal<string[]>([]);
+  nomesCartaoCsv = signal<string[]>([]);
 
   tipoGlobal = signal<TipoLancamento>(TipoLancamento.DESPESA);
   tiposLancamento = TipoLancamento;
+  marcarComoEfetivado = signal<boolean>(false); // Nova flag para controlar o status do lançamento
 
   // Formulário de associação de colunas
   mappingForm: FormGroup = this.fb.group({
@@ -80,7 +89,8 @@ export class ImportacaoModalComponent implements OnInit {
     descricao: [null, Validators.required],
     valor: [null, Validators.required],
     conta: [null],
-    categoria: [null]
+    categoria: [null],
+    cartao: [null]
   });
 
   ngOnInit() {
@@ -95,6 +105,10 @@ export class ImportacaoModalComponent implements OnInit {
     this.mappingForm.get('categoria')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.extrairValoresRelacionais());
+
+    this.mappingForm.get('cartao')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.extrairValoresRelacionais());
   }
 
   private carregarEntidades() {
@@ -105,6 +119,10 @@ export class ImportacaoModalComponent implements OnInit {
     this.categoriaService.listarCategorias()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(res => this.categorias.set(res));
+
+    this.cartaoCreditoService.listarTodos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(res => this.cartoes.set(res));
   }
 
   async onFileSelected(event: any) {
@@ -130,7 +148,8 @@ export class ImportacaoModalComponent implements OnInit {
       descricao: headers.find(h => h.toLowerCase().includes('descri') || h.toLowerCase().includes('histórico')),
       valor: headers.find(h => h.toLowerCase().includes('valor') || h.toLowerCase().includes('quantia')),
       conta: headers.find(h => h.toLowerCase().includes('conta')),
-      categoria: headers.find(h => h.toLowerCase().includes('categoria'))
+      categoria: headers.find(h => h.toLowerCase().includes('categoria')),
+      cartao: headers.find(h => h.toLowerCase().includes('cartão') || h.toLowerCase().includes('cartao'))
     };
 
     this.mappingForm.patchValue(map);
@@ -149,6 +168,11 @@ export class ImportacaoModalComponent implements OnInit {
       const categoriasUnicas = Array.from(new Set(data.map(row => row[map.categoria]).filter(val => !!val)));
       this.nomesCategoriaCsv.set(categoriasUnicas as string[]);
     }
+
+    if (map.cartao) {
+      const cartoesUnicos = Array.from(new Set(data.map(row => row[map.cartao]).filter(val => !!val)));
+      this.nomesCartaoCsv.set(cartoesUnicos as string[]);
+    }
   }
 
   associarConta(nomeCsv: string, idBanco: number) {
@@ -157,6 +181,10 @@ export class ImportacaoModalComponent implements OnInit {
 
   associarCategoria(nomeCsv: string, idBanco: number) {
     this.mapeamentoCategorias.update(map => ({ ...map, [nomeCsv]: idBanco }));
+  }
+
+  associarCartao(nomeCsv: string, idBanco: number) {
+    this.mapeamentoCartoes.update(map => ({ ...map, [nomeCsv]: idBanco }));
   }
 
   onCategoriaSelectionChange(event: any, nomeCsv: string) {
@@ -196,6 +224,7 @@ export class ImportacaoModalComponent implements OnInit {
     const data = this.csvData();
     const contasMap = this.mapeamentoContas();
     const categoriasMap = this.mapeamentoCategorias();
+    const cartoesMap = this.mapeamentoCartoes();
 
     const lancamentos: LancamentoRequestDTO[] = data.map(row => {
       const valorOriginal = row[map.valor] || '0';
@@ -227,6 +256,9 @@ export class ImportacaoModalComponent implements OnInit {
       const nomeCategoriaCsv = map.categoria ? row[map.categoria] : null;
       const categoriaId = nomeCategoriaCsv ? categoriasMap[nomeCategoriaCsv] : undefined;
 
+      const nomeCartaoCsv = map.cartao ? row[map.cartao] : null;
+      const cartaoId = nomeCartaoCsv ? cartoesMap[nomeCartaoCsv] : undefined;
+
       return {
         descricao: row[map.descricao],
         valor: isNaN(valorFinal) ? 0 : valorFinal,
@@ -234,10 +266,11 @@ export class ImportacaoModalComponent implements OnInit {
         dataVencimento: dataIso, // Assume vencimento = lançamento
         dataEfetivacao: dataIso, // Se está no CSV do banco, foi efetivado
         tipo: tipo,
-        status: StatusLancamento.EFETIVADO, // Assumimos que CSV já são efetivados
+        status: cartaoId ? (this.marcarComoEfetivado() ? StatusLancamento.EFETIVADO : StatusLancamento.PENDENTE) : StatusLancamento.EFETIVADO,
         tipoRecorrencia: TipoRecorrencia.NENHUMA,
         contaId: contaId,
-        categoriaId: categoriaId
+        categoriaId: categoriaId,
+        cartaoCreditoId: cartaoId
       } as LancamentoRequestDTO;
     });
 

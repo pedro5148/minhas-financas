@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CartaoCredito, CartaoCreditoRequestDTO } from '../models/cartao-credito.model';
 import { environment } from '../../environments/environment';
@@ -11,8 +11,15 @@ export class CartaoCreditoService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/cartoes`;
 
-  listarTodos(): Observable<CartaoCredito[]> {
-    return this.http.get<CartaoCredito[]>(this.apiUrl);
+  listarTodos(mes?: number, ano?: number): Observable<CartaoCredito[]> {
+    let params = new HttpParams();
+    if (mes !== undefined && mes !== null) {
+      params = params.set('mes', mes.toString());
+    }
+    if (ano !== undefined && ano !== null) {
+      params = params.set('ano', ano.toString());
+    }
+    return this.http.get<CartaoCredito[]>(this.apiUrl, { params });
   }
 
   criar(cartao: CartaoCreditoRequestDTO): Observable<CartaoCredito> {

@@ -24,6 +24,8 @@ import { Conta } from '../../models/conta.model';
 import { Categoria, Subcategoria } from '../../models/categoria.model';
 import { TipoLancamento, TipoRecorrencia, StatusLancamento, LancamentoResponseDTO, LancamentoRequestDTO } from '../../models/lancamento.model';
 import { CartaoCredito } from '../../models/cartao-credito.model';
+import { FaturaService } from '../../services/fatura.service';
+import { Fatura } from '../../models/fatura.model';
 
 @Component({
   selector: 'app-lancamento-modal',
@@ -48,6 +50,7 @@ export class LancamentoModalComponent implements OnInit {
   subcategorias: Subcategoria[] = [];
   subcategoriasFiltradas: Subcategoria[] = [];
   cartoes: CartaoCredito[] = [];
+  faturasProjetadas: Fatura[] = [];
 
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<LancamentoModalComponent>);
@@ -55,6 +58,7 @@ export class LancamentoModalComponent implements OnInit {
   private contaService = inject(ContaService);
   private categoriaService = inject(CategoriaService);
   private cartaoService = inject(CartaoCreditoService);
+  private faturaService = inject(FaturaService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private destroyRef = inject(DestroyRef);
@@ -79,6 +83,7 @@ export class LancamentoModalComponent implements OnInit {
       valor: [this.lancamentoAtual?.valor || null, [Validators.required, Validators.min(0.01)]],
       conta: [null, Validators.required],
       cartaoCredito: [null],
+      fatura: [{value: null, disabled: true}],
       contaDestino: [null],
       categoria: [null],
       subcategoria: [null],
@@ -136,6 +141,24 @@ export class LancamentoModalComponent implements OnInit {
         if (contaEncontrada) {
           this.form.get('conta')?.setValue(contaEncontrada);
         }
+      }
+
+      if (cartao) {
+        this.faturaService.projetarProximasFaturas(cartao.id).subscribe(faturas => {
+          this.faturasProjetadas = faturas;
+          this.form.get('fatura')?.enable();
+          
+          if (this.lancamentoAtual?.fatura) {
+            const faturaEncontrada = this.faturasProjetadas.find(f => f.mesAno === this.lancamentoAtual!.fatura!.mesAno);
+            this.form.get('fatura')?.setValue(faturaEncontrada || this.faturasProjetadas[0]);
+          } else {
+            this.form.get('fatura')?.setValue(this.faturasProjetadas[0]);
+          }
+        });
+      } else {
+        this.faturasProjetadas = [];
+        this.form.get('fatura')?.setValue(null);
+        this.form.get('fatura')?.disable();
       }
     });
   }
@@ -236,6 +259,21 @@ export class LancamentoModalComponent implements OnInit {
     }
 
     const values = this.form.getRawValue();
+    
+    let faturaId = null;
+    let mesFatura = null;
+    let anoFatura = null;
+
+    if (this.tipo === TipoLancamento.DESPESA && values.cartaoCredito && values.fatura) {
+      if (values.fatura.id) {
+        faturaId = values.fatura.id;
+      } else if (values.fatura.mesAno) {
+        const partes = values.fatura.mesAno.split('/');
+        mesFatura = parseInt(partes[0], 10);
+        anoFatura = parseInt(partes[1], 10);
+      }
+    }
+
     const lancamento: LancamentoRequestDTO = {
       tipo: this.tipo,
       descricao: values.descricao,
@@ -243,7 +281,9 @@ export class LancamentoModalComponent implements OnInit {
       contaId: values.conta?.id,
       contaDestinoId: this.tipo === TipoLancamento.TRANSFERENCIA ? values.contaDestino?.id : null,
       cartaoCreditoId: this.tipo === TipoLancamento.DESPESA ? values.cartaoCredito?.id : null,
-      categoriaId: this.tipo !== TipoLancamento.TRANSFERENCIA ? values.categoria?.id : null,
+      faturaId: faturaId,
+      mesFatura: mesFatura,
+      anoFatura: anoFatura,
       subcategoriaId: values.subcategoria?.id,
       dataLancamento: values.dataLancamento ? this.formatarData(values.dataLancamento) : '',
       dataVencimento: values.dataVencimento ? this.formatarData(values.dataVencimento) : '',
@@ -260,6 +300,12 @@ export class LancamentoModalComponent implements OnInit {
 
     request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        this.snackBar.open('Lançamento salvo com sucesso!', 'Fechar', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-success']
+        });
         this.lancamentoService.notificarAlteracao();
         this.dialogRef.close(true);
       },

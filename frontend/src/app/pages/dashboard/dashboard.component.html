@@ -1,14 +1,6 @@
 <div class="dashboard-container">
   
-  <header class="dashboard-header card-panel">
-    <button mat-icon-button (click)="mudarMes(-1)" class="month-nav-btn">
-      <mat-icon>chevron_left</mat-icon>
-    </button>
-    <h2 class="month-title">{{ getNomeMesAno() }}</h2>
-    <button mat-icon-button (click)="mudarMes(1)" class="month-nav-btn">
-      <mat-icon>chevron_right</mat-icon>
-    </button>
-  </header>
+  <app-seletor-mes [dataInicial]="mesAtual" (mesAlterado)="onMesAlterado($event)"></app-seletor-mes>
 
   <app-dashboard-resumo-saldos
     [saldoInicial]="saldoInicial"

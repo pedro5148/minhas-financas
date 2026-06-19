@@ -76,8 +76,8 @@
 
     <!-- FATURA INFO -->
     <div class="fatura-row">
-      <span class="fatura-title">Fatura</span>
-      <span class="fatura-total">{{ (faturaAtual?.valorTotal || 0) | currency:'BRL' }}</span>
+      <span class="fatura-title">Fatura (Mês selecionado)</span>
+      <span class="fatura-total">{{ (cartao.valorFatura || 0) | currency:'BRL' }}</span>
     </div>
   </div>
 

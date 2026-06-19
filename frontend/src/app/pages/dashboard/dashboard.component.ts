@@ -13,6 +13,7 @@ import { ContaService } from '../../services/conta.service';
 import { LancamentoResponseDTO, TipoLancamento, StatusLancamento } from '../../models/lancamento.model';
 import { LancamentoModalComponent } from '../../components/lancamento-modal/lancamento-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { SeletorMesComponent, MesAno } from '../../components/seletor-mes/seletor-mes.component';
 
 import { DashboardResumoSaldosComponent } from './components/dashboard-resumo-saldos/dashboard-resumo-saldos.component';
 import { DashboardDetalhesPendenciasComponent } from './components/dashboard-detalhes-pendencias/dashboard-detalhes-pendencias.component';
@@ -31,7 +32,8 @@ import { DashboardTotalizadorComponent } from './components/dashboard-totalizado
     DashboardResumoSaldosComponent,
     DashboardDetalhesPendenciasComponent,
     DashboardUltimosLancamentosComponent,
-    DashboardTotalizadorComponent
+    DashboardTotalizadorComponent,
+    SeletorMesComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -104,10 +106,14 @@ export class DashboardComponent implements OnInit {
 
       if (l.tipo === TipoLancamento.DESPESA) {
         if (l.status === StatusLancamento.PENDENTE) {
-          despesasPendentesCents += valorCents;
+          if (!l.fatura) {
+            despesasPendentesCents += valorCents;
+          }
         } else {
           gastoCents += valorCents;
-          saldoAtualCents -= valorCents;
+          if (!l.fatura) {
+            saldoAtualCents -= valorCents;
+          }
         }
       } else if (l.tipo === TipoLancamento.RECEITA) {
         if (l.status === StatusLancamento.PENDENTE) {
@@ -121,6 +127,14 @@ export class DashboardComponent implements OnInit {
       }
     });
 
+    // Para o saldo previsto, subtraímos as despesas pendentes (apenas as que não são de cartão, pois as do cartão só caem na fatura)
+    let despesasPendentesNaoCartaoCents = 0;
+    this.lancamentos.forEach(l => {
+      if (l.tipo === TipoLancamento.DESPESA && l.status === StatusLancamento.PENDENTE && !l.fatura) {
+        despesasPendentesNaoCartaoCents += Math.round(l.valor * 100);
+      }
+    });
+
     this.totalDespesasPendentes = despesasPendentesCents / 100;
     this.totalReceitasPendentes = receitasPendentesCents / 100;
     this.totalTransferencias = transferenciasCents / 100;
@@ -130,7 +144,7 @@ export class DashboardComponent implements OnInit {
     this.saldoInicial = this.saldoBaseContas;
     this.saldoAtual = saldoAtualCents / 100;
 
-    this.saldoPrevisto = (saldoAtualCents - despesasPendentesCents + receitasPendentesCents) / 100;
+    this.saldoPrevisto = (saldoAtualCents - despesasPendentesNaoCartaoCents + receitasPendentesCents) / 100;
 
     this.ultimasDespesas = [
       ...this.lancamentos
@@ -147,14 +161,11 @@ export class DashboardComponent implements OnInit {
     ];
   }
 
-  mudarMes(delta: number) {
-    this.mesAtual = new Date(this.mesAtual.getFullYear(), this.mesAtual.getMonth() + delta, 1);
-    this.carregarDados();
-  }
-
-  getNomeMesAno(): string {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    return `${meses[this.mesAtual.getMonth()]} ${this.mesAtual.getFullYear()}`;
+  onMesAlterado(evento: MesAno) {
+    if (evento && evento.mes !== null) {
+      this.mesAtual = new Date(evento.ano, evento.mes - 1, 1);
+      this.carregarDados();
+    }
   }
 
   abrirModalNovoLancamento(tipo: 'DESPESA' | 'RECEITA' | 'TRANSFERENCIA') {

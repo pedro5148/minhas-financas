@@ -114,11 +114,28 @@
         </div>
       </div>
 
+      <div class="mapping-row">
+        <div class="system-field">
+          <strong>Cartão de Crédito</strong> <span class="optional">(Opcional)</span>
+        </div>
+        <div class="arrow-icon">
+          <mat-icon>arrow_back</mat-icon>
+        </div>
+        <div class="csv-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="cartao" placeholder="Não associar do CSV">
+              <mat-option [value]="null">-- Não associar do CSV --</mat-option>
+              <mat-option *ngFor="let header of headers()" [value]="header">{{ header }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
     </form>
   </div>
 
   <!-- ETAPA 3: Mapeamento de Relacionamentos -->
-  <div class="step-container" *ngIf="nomesContaCsv().length > 0 || nomesCategoriaCsv().length > 0">
+  <div class="step-container" *ngIf="nomesContaCsv().length > 0 || nomesCategoriaCsv().length > 0 || nomesCartaoCsv().length > 0">
     <div class="intro-block">
       <p class="humanized-text">
         Identificamos nomes de contas e categorias dentro do seu arquivo. Para que os saldos e gráficos fiquem corretos, informe a qual item do sistema cada texto do arquivo corresponde.
@@ -163,6 +180,35 @@
                   <mat-icon color="primary">add</mat-icon> Criar nova categoria
                 </mat-option>
                 <mat-option *ngFor="let categoria of categorias()" [value]="categoria.id">{{ categoria.nome }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="nomesCartaoCsv().length > 0" class="relational-group">
+      <h3>Vincular Cartões do Arquivo</h3>
+      
+      <div style="margin-bottom: 16px; padding: 12px; background-color: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+        <mat-checkbox [checked]="marcarComoEfetivado()" (change)="marcarComoEfetivado.set($event.checked)">
+          Marcar as despesas vinculadas a estes cartões como pagas (Efetivadas). 
+          <span class="text-muted" style="font-weight: 400; font-size: 0.85em; display: block; margin-top: 4px;">Se desmarcado, entrarão como Pendentes. Os demais lançamentos sem cartão entrarão como Efetivados.</span>
+        </mat-checkbox>
+      </div>
+
+      <div class="relational-list">
+        <div class="relational-row" *ngFor="let nomeCsv of nomesCartaoCsv()">
+          <div class="csv-badge-container">
+            <span class="csv-badge">{{ nomeCsv }}</span>
+          </div>
+          <div class="connector-text">
+            pertence ao cartão
+          </div>
+          <div class="system-select">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-select [value]="mapeamentoCartoes()[nomeCsv]" (selectionChange)="associarCartao(nomeCsv, $event.value)" placeholder="Escolha o cartão real...">
+                <mat-option *ngFor="let cartao of cartoes()" [value]="cartao.id">{{ cartao.nome }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>

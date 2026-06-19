@@ -28,4 +28,5 @@ public class LancamentoResponseDTO {
     private Integer totalParcelas;
     private CartaoCreditoResponseDTO cartaoCredito;
     private FaturaResponseDTO fatura;
+    private String nomeCartao;
 }

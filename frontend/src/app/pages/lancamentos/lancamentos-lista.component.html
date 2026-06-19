@@ -9,6 +9,8 @@
     </mat-form-field>
   </div>
 
+  <app-seletor-mes [dataInicial]="dataAtualParaSeletor" [permitirVisaoAnual]="true" (mesAlterado)="onMesAlterado($event)"></app-seletor-mes>
+
   <div class="table-container">
     <mat-tab-group (selectedTabChange)="onTabChange($event)" class="context-tabs" color="primary">
       <mat-tab label="Visão Geral"></mat-tab>
@@ -34,10 +36,8 @@
       <ng-container matColumnDef="categoria">
         <th mat-header-cell *matHeaderCellDef mat-sort-header> Categoria </th>
         <td mat-cell *matCellDef="let row">
-          <mat-chip-set>
-            <mat-chip *ngIf="row.categoria" class="tag-chip tag-categoria" disableRipple>{{row.categoria.nome}}</mat-chip>
-            <span *ngIf="!row.categoria" class="text-muted">-</span>
-          </mat-chip-set>
+          <span *ngIf="row.categoria" class="tag-chip">{{row.categoria.nome}}</span>
+          <span *ngIf="!row.categoria" class="text-muted">-</span>
         </td>
       </ng-container>
 
@@ -45,10 +45,22 @@
       <ng-container matColumnDef="conta">
         <th mat-header-cell *matHeaderCellDef mat-sort-header> Conta </th>
         <td mat-cell *matCellDef="let row">
-          <mat-chip-set>
-            <mat-chip *ngIf="row.conta" class="tag-chip tag-conta" disableRipple>{{row.conta.nome}}</mat-chip>
-            <span *ngIf="!row.conta" class="text-muted">-</span>
-          </mat-chip-set>
+          <div class="conta-cartao-container" *ngIf="row.conta">
+            <span class="tag-chip">{{row.conta.nome}}</span>
+          </div>
+          <span *ngIf="!row.conta" class="text-muted">-</span>
+        </td>
+      </ng-container>
+
+      <!-- Cartão Column -->
+      <ng-container matColumnDef="cartao">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Cartão </th>
+        <td mat-cell *matCellDef="let row">
+          <div class="conta-cartao-container" *ngIf="row.cartaoCredito">
+            <mat-icon class="cartao-icon" title="Cartão de Crédito">credit_card</mat-icon>
+            <span class="tag-chip cartao-tag">{{row.cartaoCredito.nome}}</span>
+          </div>
+          <span *ngIf="!row.cartaoCredito" class="text-muted">-</span>
         </td>
       </ng-container>
 
@@ -62,11 +74,9 @@
 
       <!-- Ações Column -->
       <ng-container matColumnDef="acoes">
-        <th mat-header-cell *matHeaderCellDef> Ações </th>
+        <th mat-header-cell *matHeaderCellDef> AÇÕES </th>
         <td mat-cell *matCellDef="let row">
-          <button mat-icon-button color="warn" (click)="$event.stopPropagation(); excluirLancamento(row)" aria-label="Excluir lançamento">
-            <mat-icon>delete</mat-icon>
-          </button>
+          <a class="action-link" (click)="$event.stopPropagation(); excluirLancamento(row)">Excluir</a>
         </td>
       </ng-container>
 

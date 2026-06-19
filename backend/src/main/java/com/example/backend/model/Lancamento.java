@@ -50,13 +50,6 @@ public class Lancamento {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "categoria_id",
-            foreignKey = @ForeignKey(name = "fk_lancamentos_categoria_id")
-    )
-    private Categoria categoria; // Pode ser nulo se for transferência
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
             name = "subcategoria_id",
             foreignKey = @ForeignKey(name = "fk_lancamentos_subcategoria_id")
     )
@@ -90,10 +83,10 @@ public class Lancamento {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "cartao_id",
-            foreignKey = @ForeignKey(name = "fk_lancamentos_cartao_id")
+            name = "lancamento_parcelado_id",
+            foreignKey = @ForeignKey(name = "fk_lancamentos_parcelados_id")
     )
-    private CartaoCredito cartaoCredito;
+    private LancamentoParcelado lancamentoParcelado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

@@ -1,0 +1,19 @@
+services:
+  backend-dev:
+    image: eclipse-temurin:21-jdk
+    container_name: minhas_financas_dev
+    working_dir: /app
+    env_file:
+      - ../.env
+    ports:
+      - "8082:8082"
+      - "5005:5005"
+    volumes:
+      - ./:/app
+      - maven-repo:/root/.m2
+    command: >
+      ./mvnw spring-boot:run
+      -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+
+volumes:
+  maven-repo:

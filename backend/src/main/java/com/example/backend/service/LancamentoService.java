@@ -29,38 +29,24 @@ public class LancamentoService {
     private final LancamentoRepository repository;
     private final FaturaService faturaService;
     private final ContaRepository contaRepository;
-    private final CategoriaRepository categoriaRepository;
     private final SubcategoriaRepository subcategoriaRepository;
     private final CartaoCreditoRepository cartaoRepository;
     private final LancamentoMapper mapper;
-
+    
     public LancamentoService(LancamentoRepository repository, FaturaService faturaService,
-                             ContaRepository contaRepository, CategoriaRepository categoriaRepository,
-                             SubcategoriaRepository subcategoriaRepository, CartaoCreditoRepository cartaoRepository,
-                             LancamentoMapper mapper) {
+                             ContaRepository contaRepository, SubcategoriaRepository subcategoriaRepository, 
+                             CartaoCreditoRepository cartaoRepository, LancamentoMapper mapper) {
         this.repository = repository;
         this.faturaService = faturaService;
         this.contaRepository = contaRepository;
-        this.categoriaRepository = categoriaRepository;
         this.subcategoriaRepository = subcategoriaRepository;
         this.cartaoRepository = cartaoRepository;
         this.mapper = mapper;
     }
 
-    public Page<LancamentoResponseDTO> listar(String descricao, TipoLancamento tipo, Pageable pageable) {
-        Page<Lancamento> paginasEntidade;
-        boolean hasDesc = (descricao != null && !descricao.trim().isEmpty());
-        
-        if (hasDesc && tipo != null) {
-            paginasEntidade = repository.findByDescricaoContainingIgnoreCaseAndTipo(descricao.trim(), tipo, pageable);
-        } else if (hasDesc) {
-            paginasEntidade = repository.findByDescricaoContainingIgnoreCase(descricao.trim(), pageable);
-        } else if (tipo != null) {
-            paginasEntidade = repository.findByTipo(tipo, pageable);
-        } else {
-            paginasEntidade = repository.findAll(pageable);
-        }
-        
+    public Page<LancamentoResponseDTO> listar(String descricao, TipoLancamento tipo, Integer mes, Integer ano, Pageable pageable) {
+        org.springframework.data.jpa.domain.Specification<Lancamento> spec = LancamentoSpecification.filtroAvancado(descricao, tipo, mes, ano);
+        Page<Lancamento> paginasEntidade = repository.findAll(spec, pageable);
         return paginasEntidade.map(mapper::toResponseDTO);
     }
 
@@ -128,11 +114,8 @@ public class LancamentoService {
         }
 
         for (Lancamento salvo : lancamentosSalvos) {
-            if (salvo.getCartaoCredito() != null) {
-                Fatura fatura = faturaService.obterOuCriarFatura(salvo.getCartaoCredito().getId(), salvo.getDataLancamento());
-                salvo.setFatura(fatura);
-                repository.save(salvo);
-                faturaService.atualizarValorFatura(fatura.getId());
+            if (salvo.getFatura() != null) {
+                faturaService.atualizarValorFatura(salvo.getFatura().getId());
             }
         }
 
@@ -176,6 +159,13 @@ public class LancamentoService {
         // Utiliza Batch Insert nativo (muito mais rápido do que loops .save())
         List<Lancamento> salvos = repository.saveAll(lancamentosParaSalvar);
 
+        // Vincula faturas aos lançamentos de cartão importados
+        for (Lancamento salvo : salvos) {
+            if (salvo.getFatura() != null) {
+                faturaService.atualizarValorFatura(salvo.getFatura().getId());
+            }
+        }
+
         return salvos.stream().map(mapper::toResponseDTO).collect(Collectors.toList());
     }
 
@@ -197,10 +187,10 @@ public class LancamentoService {
                 .orElseThrow(() -> new EntityNotFoundException("Lançamento não encontrado"));
 
         Lancamento lancamentoAtualizado = preencherEntidadesRelacionadas(mapper.toEntity(dto), dto);
+        Fatura faturaAntiga = existente.getFatura();
 
         existente.setValor(lancamentoAtualizado.getValor());
         existente.setDescricao(lancamentoAtualizado.getDescricao());
-        existente.setCategoria(lancamentoAtualizado.getCategoria());
         existente.setSubcategoria(lancamentoAtualizado.getSubcategoria());
         existente.setConta(lancamentoAtualizado.getConta());
         existente.setContaDestino(lancamentoAtualizado.getContaDestino());
@@ -209,19 +199,24 @@ public class LancamentoService {
         existente.setDataEfetivacao(lancamentoAtualizado.getDataEfetivacao());
         existente.setStatus(lancamentoAtualizado.getStatus());
         existente.setObservacoes(lancamentoAtualizado.getObservacoes());
-        existente.setCartaoCredito(lancamentoAtualizado.getCartaoCredito());
+        existente.setFatura(lancamentoAtualizado.getFatura());
 
         Lancamento salvo = repository.save(existente);
+        repository.flush();
 
-        if (salvo.getCartaoCredito() != null) {
-            Fatura fatura = faturaService.obterOuCriarFatura(salvo.getCartaoCredito().getId(), salvo.getDataLancamento());
-            salvo.setFatura(fatura);
-            repository.save(salvo);
-            faturaService.atualizarValorFatura(fatura.getId());
+        // Atualiza o total da fatura nova (ou mantida)
+        if (salvo.getFatura() != null) {
+            faturaService.atualizarValorFatura(salvo.getFatura().getId());
         }
 
-        if (existente.getFatura() != null && (salvo.getFatura() == null || !existente.getFatura().getId().equals(salvo.getFatura().getId()))) {
-            faturaService.atualizarValorFatura(existente.getFatura().getId());
+        // Se a fatura mudou ou foi removida, precisamos limpar a fatura antiga
+        if (faturaAntiga != null && (salvo.getFatura() == null || !faturaAntiga.getId().equals(salvo.getFatura().getId()))) {
+            long count = repository.countByFaturaId(faturaAntiga.getId());
+            if (count == 0) {
+                faturaService.excluirFatura(faturaAntiga.getId());
+            } else {
+                faturaService.atualizarValorFatura(faturaAntiga.getId());
+            }
         }
 
         return mapper.toResponseDTO(salvo);
@@ -229,13 +224,20 @@ public class LancamentoService {
 
     @Transactional
     public void excluir(Long id) {
-        Lancamento existente = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Lançamento não encontrado para exclusão"));
-        Fatura fatura = existente.getFatura();
+        Lancamento existente = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Lançamento não encontrado para exclusão"));
         
-        repository.deleteById(id);
+        Fatura fatura = existente.getFatura();
+        repository.delete(existente);
+        repository.flush();
         
         if (fatura != null) {
-            faturaService.atualizarValorFatura(fatura.getId());
+            long count = repository.countByFaturaId(fatura.getId());
+            if (count == 0) {
+                faturaService.excluirFatura(fatura.getId());
+            } else {
+                faturaService.atualizarValorFatura(fatura.getId());
+            }
         }
     }
 
@@ -250,22 +252,21 @@ public class LancamentoService {
         } else {
             lancamento.setContaDestino(null);
         }
-        if (dto.getCategoriaId() != null) {
-            lancamento.setCategoria(categoriaRepository.findById(dto.getCategoriaId()).orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada")));
-        } else {
-            lancamento.setCategoria(null);
-        }
         if (dto.getSubcategoriaId() != null) {
             lancamento.setSubcategoria(subcategoriaRepository.findById(dto.getSubcategoriaId()).orElseThrow(() -> new EntityNotFoundException("Subcategoria não encontrada")));
         } else {
             lancamento.setSubcategoria(null);
         }
-        if (dto.getCartaoCreditoId() != null) {
-            lancamento.setCartaoCredito(cartaoRepository.findById(dto.getCartaoCreditoId()).orElseThrow(() -> new EntityNotFoundException("Cartão não encontrado")));
+        
+        if (dto.getFaturaId() != null) {
+            lancamento.setFatura(faturaService.buscarPorId(dto.getFaturaId()));
+        } else if (dto.getCartaoCreditoId() != null && dto.getMesFatura() != null && dto.getAnoFatura() != null) {
+            Fatura fatura = faturaService.obterOuCriarFaturaProjetada(dto.getCartaoCreditoId(), dto.getMesFatura(), dto.getAnoFatura());
+            lancamento.setFatura(fatura);
+        } else if (dto.getCartaoCreditoId() != null && dto.getDataLancamento() != null) {
+            Fatura fatura = faturaService.obterOuCriarFatura(dto.getCartaoCreditoId(), dto.getDataLancamento());
+            lancamento.setFatura(fatura);
         } else {
-            lancamento.setCartaoCredito(null);
-        }
-        if (dto.getFaturaId() == null) {
             lancamento.setFatura(null);
         }
         return lancamento;
@@ -278,7 +279,6 @@ public class LancamentoService {
         copia.setValor(base.getValor());
         copia.setConta(base.getConta());
         copia.setContaDestino(base.getContaDestino());
-        copia.setCategoria(base.getCategoria());
         copia.setSubcategoria(base.getSubcategoria());
         copia.setDataLancamento(base.getDataLancamento());
         copia.setDataVencimento(base.getDataVencimento());
@@ -288,7 +288,8 @@ public class LancamentoService {
         copia.setTipoRecorrencia(base.getTipoRecorrencia());
         copia.setParcelaAtual(base.getParcelaAtual());
         copia.setTotalParcelas(base.getTotalParcelas());
-        copia.setCartaoCredito(base.getCartaoCredito());
+        copia.setFatura(base.getFatura());
+        copia.setLancamentoParcelado(base.getLancamentoParcelado());
         return copia;
     }
 }

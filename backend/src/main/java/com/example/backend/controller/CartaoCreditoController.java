@@ -20,8 +20,10 @@ public class CartaoCreditoController {
     }
 
     @GetMapping
-    public List<CartaoCreditoResponseDTO> listarTodos() {
-        return service.listarTodos();
+    public List<CartaoCreditoResponseDTO> listarTodos(
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano) {
+        return service.listarTodos(mes, ano);
     }
 
     @PostMapping

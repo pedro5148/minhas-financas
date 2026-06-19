@@ -16,6 +16,7 @@ import { LancamentoResponseDTO, TipoLancamento } from '../../models/lancamento.m
 import { LancamentoService } from '../../services/lancamento.service';
 import { LancamentoModalComponent } from '../../components/lancamento-modal/lancamento-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { SeletorMesComponent, MesAno } from '../../components/seletor-mes/seletor-mes.component';
 
 @Component({
   selector: 'app-lancamentos-lista',
@@ -30,7 +31,8 @@ import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-
     MatIconModule,
     MatButtonModule,
     MatTabsModule,
-    MatChipsModule
+    MatChipsModule,
+    SeletorMesComponent
   ],
   templateUrl: './lancamentos-lista.component.html',
   styleUrl: './lancamentos-lista.component.scss',
@@ -39,12 +41,17 @@ import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-
 export class LancamentosListaComponent implements OnInit, AfterViewInit {
   private lancamentoService = inject(LancamentoService);
 
-  displayedColumns: string[] = ['dataLancamento', 'descricao', 'categoria', 'conta', 'valor', 'acoes'];
+  displayedColumns: string[] = ['dataLancamento', 'descricao', 'categoria', 'conta', 'cartao', 'valor', 'acoes'];
   dataSource = new MatTableDataSource<LancamentoResponseDTO>([]);
   
   tiposLancamento = TipoLancamento;
   totalElements = 0;
   filtroTipo: string | null = null;
+  
+  dataAtualParaSeletor = new Date();
+  filtroMes: number | null = this.dataAtualParaSeletor.getMonth() + 1;
+  filtroAno: number | null = this.dataAtualParaSeletor.getFullYear();
+
   private searchSubject = new Subject<string>();
   private dialog = inject(MatDialog);
 
@@ -61,6 +68,16 @@ export class LancamentosListaComponent implements OnInit, AfterViewInit {
       this.paginator.pageIndex = 0;
     }
     
+    this.carregarLancamentos();
+  }
+
+  onMesAlterado(evento: MesAno) {
+    this.filtroMes = evento.mes;
+    this.filtroAno = evento.ano;
+
+    if (this.paginator) {
+      this.paginator.pageIndex = 0;
+    }
     this.carregarLancamentos();
   }
 
@@ -103,7 +120,7 @@ export class LancamentosListaComponent implements OnInit, AfterViewInit {
 
     const descricao = this.dataSource.filter || '';
 
-    this.lancamentoService.listar(page, size, sortStr, descricao, this.filtroTipo).subscribe(pagina => {
+    this.lancamentoService.listar(page, size, sortStr, descricao, this.filtroTipo, this.filtroMes, this.filtroAno).subscribe(pagina => {
       this.dataSource.data = pagina.content;
       this.totalElements = pagina.totalElements;
     });
