@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.ErrorDTO;
+import com.example.backend.exception.RegraNegocioException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,8 +50,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorDTO> handleRuntimeException(RuntimeException ex) {
+    @ExceptionHandler(RegraNegocioException.class)
+    public ResponseEntity<ErrorDTO> handleRegraNegocioException(RegraNegocioException ex) {
         ErrorDTO error = ErrorDTO.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -58,6 +59,17 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorDTO> handleRuntimeException(RuntimeException ex) {
+        ErrorDTO error = ErrorDTO.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .message("Ocorreu um erro interno no servidor. Contate o suporte.")
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(Exception.class)

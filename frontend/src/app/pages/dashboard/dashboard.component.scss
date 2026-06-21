@@ -26,62 +26,124 @@
   bottom: 32px;
   right: 32px;
   display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 16px;
   z-index: 100;
 
   .fab-menu {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: 12px;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(20px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+
+    &.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+
+      .fab-action-btn {
+        transform: translateY(0);
+        opacity: 1;
+        
+        &:nth-child(1) { transition-delay: 0.1s; }
+        &:nth-child(2) { transition-delay: 0.05s; }
+        &:nth-child(3) { transition-delay: 0s; }
+      }
+    }
   }
 
-  &:hover .fab-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+  .fab-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    &.income-btn {
+      background-color: #dcfce7;
+      color: #166534;
+      mat-icon { color: #166534; }
+    }
+
+    &.expense-btn {
+      background-color: #fee2e2;
+      color: #991b1b;
+      mat-icon { color: #991b1b; }
+    }
+
+    &.transfer-btn {
+      background-color: #fef3c7;
+      color: #92400e;
+      mat-icon { color: #92400e; }
+    }
   }
 
   .main-fab {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background-color: var(--primary-color) !important;
-    color: white !important;
-    box-shadow: 0 4px 16px rgba(0, 51, 102, 0.25) !important;
-  }
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--primary-color, #0f766e);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
 
-  &:hover .main-fab {
-    transform: rotate(45deg);
-    background-color: var(--accent-color) !important;
-    box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25) !important;
-  }
+    .fab-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  .menu-fab-btn {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
-    
     &:hover {
-      transform: translateY(-2px);
+      background-color: var(--primary-hover, #0d5f59);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
     }
-    
-    &.success-fab {
-      background-color: var(--success) !important;
-      color: white !important;
-      
-      &:hover {
-        background-color: darken(#166534, 5%) !important;
-      }
-    }
+  }
 
-    &.accent-fab {
-      background-color: var(--primary-color) !important;
-      color: white !important;
-      
-      &:hover {
-        background-color: var(--primary-hover) !important;
+  &.open {
+    .main-fab {
+      .fab-icon {
+        transform: rotate(45deg);
       }
     }
   }

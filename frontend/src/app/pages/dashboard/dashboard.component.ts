@@ -63,6 +63,8 @@ export class DashboardComponent implements OnInit {
   totalRecebido = 0;
   totalGasto = 0;
 
+  menuAberto: boolean = false;
+
   private reloadTrigger = new BehaviorSubject<void>(undefined);
 
   ngOnInit(): void {
@@ -208,5 +210,9 @@ export class DashboardComponent implements OnInit {
         },
         error: err => console.error(err)
       });
+  }
+
+  toggleMenu() {
+    this.menuAberto = !this.menuAberto;
   }
 }

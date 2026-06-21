@@ -7,7 +7,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatRippleModule } from '@angular/material/core';
 import { BehaviorSubject } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CartaoCredito } from '../../../../models/cartao-credito.model';

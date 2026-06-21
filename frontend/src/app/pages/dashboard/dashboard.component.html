@@ -1,56 +1,45 @@
 <div class="dashboard-container">
-  
+
   <app-seletor-mes [dataInicial]="mesAtual" (mesAlterado)="onMesAlterado($event)"></app-seletor-mes>
 
-  <app-dashboard-resumo-saldos
-    [saldoInicial]="saldoInicial"
-    [saldoAtual]="saldoAtual"
-    [saldoPrevisto]="saldoPrevisto">
+  <app-dashboard-resumo-saldos [saldoInicial]="saldoInicial" [saldoAtual]="saldoAtual" [saldoPrevisto]="saldoPrevisto">
   </app-dashboard-resumo-saldos>
 
-  <app-dashboard-detalhes-pendencias
-    [totalDespesasPendentes]="totalDespesasPendentes"
-    [totalReceitasPendentes]="totalReceitasPendentes"
-    [totalTransferencias]="totalTransferencias">
+  <app-dashboard-detalhes-pendencias [totalDespesasPendentes]="totalDespesasPendentes"
+    [totalReceitasPendentes]="totalReceitasPendentes" [totalTransferencias]="totalTransferencias">
   </app-dashboard-detalhes-pendencias>
 
   <div class="lists-grid">
-    <app-dashboard-ultimos-lancamentos
-      titulo="Últimas Despesas"
-      tipoBadge="despesa"
-      [lancamentos]="ultimasDespesas"
-      (editar)="abrirModalEdicaoLancamento($event)"
-      (excluir)="excluirLancamento($event)">
+    <app-dashboard-ultimos-lancamentos titulo="Últimas Despesas" tipoBadge="despesa" [lancamentos]="ultimasDespesas"
+      (editar)="abrirModalEdicaoLancamento($event)" (excluir)="excluirLancamento($event)">
     </app-dashboard-ultimos-lancamentos>
 
-    <app-dashboard-ultimos-lancamentos
-      titulo="Últimas Receitas"
-      tipoBadge="receita"
-      [lancamentos]="ultimasReceitas"
-      (editar)="abrirModalEdicaoLancamento($event)"
-      (excluir)="excluirLancamento($event)">
+    <app-dashboard-ultimos-lancamentos titulo="Últimas Receitas" tipoBadge="receita" [lancamentos]="ultimasReceitas"
+      (editar)="abrirModalEdicaoLancamento($event)" (excluir)="excluirLancamento($event)">
     </app-dashboard-ultimos-lancamentos>
   </div>
 
-  <app-dashboard-totalizador
-    [totalRecebido]="totalRecebido"
-    [totalGasto]="totalGasto">
+  <app-dashboard-totalizador [totalRecebido]="totalRecebido" [totalGasto]="totalGasto">
   </app-dashboard-totalizador>
 
-  <div class="fab-container">
-    <button mat-fab class="main-fab primary-fab">
-      <mat-icon>add</mat-icon>
-    </button>
-    <div class="fab-menu">
-      <button mat-mini-fab color="warn" (click)="abrirModalNovoLancamento('DESPESA')" matTooltip="Nova Despesa" class="menu-fab-btn">
-        <mat-icon>remove</mat-icon>
-      </button>
-      <button mat-mini-fab (click)="abrirModalNovoLancamento('RECEITA')" matTooltip="Nova Receita" class="menu-fab-btn success-fab">
-        <mat-icon>add</mat-icon>
-      </button>
-      <button mat-mini-fab color="accent" (click)="abrirModalNovoLancamento('TRANSFERENCIA')" matTooltip="Nova Transferência" class="menu-fab-btn accent-fab">
+  <div class="fab-container" [class.open]="menuAberto">
+    <div class="fab-menu" [class.show]="menuAberto">
+      <button class="fab-action-btn transfer-btn" (click)="abrirModalNovoLancamento('TRANSFERENCIA'); toggleMenu()">
         <mat-icon>swap_horiz</mat-icon>
+        <span>Transferência</span>
+      </button>
+      <button class="fab-action-btn expense-btn" (click)="abrirModalNovoLancamento('DESPESA'); toggleMenu()">
+        <mat-icon>remove</mat-icon>
+        <span>Despesa</span>
+      </button>
+      <button class="fab-action-btn income-btn" (click)="abrirModalNovoLancamento('RECEITA'); toggleMenu()">
+        <mat-icon>add</mat-icon>
+        <span>Receita</span>
       </button>
     </div>
+
+    <button class="main-fab" (click)="toggleMenu()">
+      <mat-icon class="fab-icon">add</mat-icon>
+    </button>
   </div>
 </div>
