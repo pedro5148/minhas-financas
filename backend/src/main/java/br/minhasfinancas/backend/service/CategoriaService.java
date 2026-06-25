@@ -24,9 +24,9 @@ public class CategoriaService {
     private final CategoriaMapper mapper;
 
     public CategoriaService(CategoriaRepository categoriaRepository,
-                            SubcategoriaRepository subcategoriaRepository,
-                            LancamentoRepository lancamentoRepository,
-                            CategoriaMapper mapper) {
+            SubcategoriaRepository subcategoriaRepository,
+            LancamentoRepository lancamentoRepository,
+            CategoriaMapper mapper) {
         this.categoriaRepository = categoriaRepository;
         this.subcategoriaRepository = subcategoriaRepository;
         this.lancamentoRepository = lancamentoRepository;
@@ -46,7 +46,7 @@ public class CategoriaService {
 
         Subcategoria subcategoria = new Subcategoria();
         subcategoria.setCategoria(categoriaSalva);
-        
+
         if (dto.getSubcategoriaNome() != null && !dto.getSubcategoriaNome().trim().isEmpty()) {
             subcategoria.setNome(dto.getSubcategoriaNome().trim());
         } else {
@@ -62,13 +62,14 @@ public class CategoriaService {
         if (!categoriaRepository.existsById(id)) {
             throw new EntityNotFoundException("Categoria não encontrada");
         }
-        if (lancamentoRepository.existsByCategoriaId(id)) {
+        if (lancamentoRepository.existsBySubcategoriaCategoriaId(id)) {
             throw new RuntimeException("Não é possível excluir: A categoria possui lançamentos vinculados.");
         }
         List<Subcategoria> subcategorias = subcategoriaRepository.findByCategoriaId(id);
         for (Subcategoria sub : subcategorias) {
             if (lancamentoRepository.existsBySubcategoriaId(sub.getId())) {
-                throw new RuntimeException("Não é possível excluir: Uma subcategoria desta categoria possui lançamentos vinculados.");
+                throw new RuntimeException(
+                        "Não é possível excluir: Uma subcategoria desta categoria possui lançamentos vinculados.");
             }
         }
         subcategoriaRepository.deleteAll(subcategorias);

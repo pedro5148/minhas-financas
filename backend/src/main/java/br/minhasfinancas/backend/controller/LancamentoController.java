@@ -18,9 +18,11 @@ import org.springframework.http.ResponseEntity;
 public class LancamentoController {
 
     private final LancamentoService service;
+    private final br.minhasfinancas.backend.service.ProcessadorNfceService processadorNfceService;
 
-    public LancamentoController(LancamentoService service) {
+    public LancamentoController(LancamentoService service, br.minhasfinancas.backend.service.ProcessadorNfceService processadorNfceService) {
         this.service = service;
+        this.processadorNfceService = processadorNfceService;
     }
 
     @GetMapping
@@ -61,5 +63,11 @@ public class LancamentoController {
     @DeleteMapping("/{id}")
     public void excluir(@PathVariable Long id) {
         service.excluir(id);
+    }
+
+    @PostMapping("/nfce")
+    public ResponseEntity<LancamentoResponseDTO> importarNfce(
+            @Valid @RequestBody br.minhasfinancas.backend.dto.NfceParseRequestDTO dto) {
+        return ResponseEntity.ok(processadorNfceService.processarEfetivarNfce(dto));
     }
 }

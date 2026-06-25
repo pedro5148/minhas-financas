@@ -25,6 +25,10 @@ public class LancamentoRequestDTO {
     private Long contaId;
 
     private Long contaDestinoId;
+
+    @NotNull(message = "A categoria é obrigatória")
+    private Long categoriaId;
+
     private Long subcategoriaId;
 
     @NotNull(message = "A data de lançamento é obrigatória")

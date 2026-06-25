@@ -29,4 +29,8 @@ public class LancamentoResponseDTO {
     private CartaoCreditoResponseDTO cartaoCredito;
     private FaturaResponseDTO fatura;
     private String nomeCartao;
+    private BigDecimal valorBruto;
+    private BigDecimal valorDesconto;
+    private EstabelecimentoResponseDTO estabelecimento;
+    private java.util.List<ItemLancamentoResponseDTO> itens;
 }

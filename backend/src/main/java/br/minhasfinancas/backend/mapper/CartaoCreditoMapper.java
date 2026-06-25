@@ -12,5 +12,6 @@ public interface CartaoCreditoMapper {
     @Mapping(target = "id", ignore = true)
     CartaoCredito toEntity(CartaoCreditoRequestDTO dto);
     
+    @Mapping(target = "valorFatura", ignore = true)
     CartaoCreditoResponseDTO toResponseDTO(CartaoCredito entity);
 }
