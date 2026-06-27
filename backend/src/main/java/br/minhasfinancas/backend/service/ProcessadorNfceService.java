@@ -32,10 +32,17 @@ public class ProcessadorNfceService {
     private final ProdutoRepository produtoRepository;
     private final LancamentoService lancamentoService;
     private final br.minhasfinancas.backend.repository.LancamentoRepository lancamentoRepository;
+    private final br.minhasfinancas.backend.mapper.LancamentoMapper lancamentoMapper;
 
     @Transactional
-    public LancamentoResponseDTO processarEfetivarNfce(NfceParseRequestDTO request) {
-        log.info("Iniciando processamento de NFC-e para a conta ID: {}", request.getContaId());
+    public LancamentoResponseDTO previewNfce(NfceParseRequestDTO request) {
+        log.info("Iniciando preview de NFC-e para a conta ID: {}", request.getContaId());
+
+        try {
+            java.nio.file.Files.writeString(java.nio.file.Paths.get("sefaz_es_debug.html"), request.getHtmlContent());
+        } catch (Exception e) {
+            log.error("Erro ao salvar HTML de debug", e);
+        }
 
         ExtractedNfceDTO nfce = parserService.parseHtml(request.getHtmlContent());
 
@@ -92,7 +99,64 @@ public class ProcessadorNfceService {
             item.setValorTotalBruto(dtoItem.getTotalPrice());
             lancamento.adicionarItem(item);
         }
-        log.info("NFC-e processada. Delegando salvamento financeiro ao LancamentoService.");
+        log.info("NFC-e processada em memória para preview.");
+        return lancamentoMapper.toResponseDTO(lancamento);
+    }
+
+    @Transactional
+    public LancamentoResponseDTO efetivarNfce(br.minhasfinancas.backend.dto.NfceEfetivarRequestDTO dto) {
+        log.info("Efetivando NFC-e na base de dados...");
+
+        if (dto.getChaveNfce() != null && !dto.getChaveNfce().isBlank()) {
+            if (lancamentoRepository.existsByChaveNfce(dto.getChaveNfce())) {
+                throw new RegraNegocioException("Esta Nota Fiscal Eletrônica já foi importada anteriormente.");
+            }
+        }
+
+        Lancamento lancamento = new Lancamento();
+
+        lancamento.setConta(lancamentoService.buscarContaPorId(dto.getContaId()));
+        lancamento.setCategoria(lancamentoService.buscarCategoriaPorId(dto.getCategoriaId()));
+        if (dto.getSubcategoriaId() != null) {
+            lancamento.setSubcategoria(lancamentoService.buscarSubcategoriaPorId(dto.getSubcategoriaId()));
+        }
+
+        lancamento.setDataLancamento(dto.getDataLancamento());
+        lancamento.setDataVencimento(dto.getDataVencimento());
+        lancamento.setDataEfetivacao(dto.getDataEfetivacao());
+        lancamento.setTipo(dto.getTipo());
+        lancamento.setStatus(dto.getStatus());
+        lancamento.setValor(dto.getValor());
+        lancamento.setValorBruto(dto.getValorBruto());
+        lancamento.setValorDesconto(dto.getValorDesconto());
+        lancamento.setChaveNfce(dto.getChaveNfce());
+        lancamento.setDescricao(dto.getDescricao());
+        lancamento.setObservacoes(dto.getObservacoes());
+        lancamento.setTipoRecorrencia(dto.getTipoRecorrencia());
+        lancamento.setParcelaAtual(1);
+        lancamento.setTotalParcelas(1);
+
+        if (dto.getEstabelecimento() != null) {
+            Estabelecimento est = resolverEstabelecimento(dto.getEstabelecimento().getCnpj(), dto.getEstabelecimento().getNome());
+            lancamento.setEstabelecimento(est);
+        }
+
+        if (dto.getItens() != null) {
+            for (br.minhasfinancas.backend.dto.ItemLancamentoResponseDTO dtoItem : dto.getItens()) {
+                Produto produto = null;
+                if (dtoItem.getProduto() != null) {
+                    produto = resolverProduto(dtoItem.getProduto().getNome(), dtoItem.getProduto().getCodigo(), dtoItem.getProduto().getUnidade());
+                }
+
+                ItemLancamento item = new ItemLancamento();
+                item.setProduto(produto);
+                item.setQuantidade(dtoItem.getQuantidade());
+                item.setValorUnitarioBruto(dtoItem.getValorUnitarioBruto());
+                item.setValorTotalBruto(dtoItem.getValorTotalBruto());
+                lancamento.adicionarItem(item);
+            }
+        }
+
         return lancamentoService.salvarLancamentoProcessado(lancamento);
     }
 

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { map, shareReplay, tap } from 'rxjs/operators';
-import { LancamentoResponseDTO, LancamentoRequestDTO } from '../models/lancamento.model';
+import { LancamentoResponseDTO, LancamentoRequestDTO, NfceParseRequestDTO, NfceEfetivarRequestDTO } from '../models/lancamento.model';
 import { Page } from '../models/page.model';
 import { environment } from '../../environments/environment';
 
@@ -114,6 +114,25 @@ export class LancamentoService {
   excluir(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       tap(() => this.limparCacheDashboard())
+    );
+  }
+
+  previewNfce(payload: NfceParseRequestDTO): Observable<LancamentoResponseDTO> {
+    return this.http.post<LancamentoResponseDTO>(`${this.apiUrl}/nfce/preview`, payload).pipe(
+      map(l => ({
+        ...l,
+        valor: typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor
+      }))
+    );
+  }
+
+  efetivarNfce(payload: NfceEfetivarRequestDTO): Observable<LancamentoResponseDTO> {
+    return this.http.post<LancamentoResponseDTO>(`${this.apiUrl}/nfce/efetivar`, payload).pipe(
+      tap(() => this.limparCacheDashboard()),
+      map(l => ({
+        ...l,
+        valor: typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor
+      }))
     );
   }
 }

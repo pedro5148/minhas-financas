@@ -9,9 +9,11 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 
 import { AlertDialogComponent } from '../alert-dialog/alert-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -22,10 +24,21 @@ import { CategoriaService } from '../../services/categoria.service';
 import { CartaoCreditoService } from '../../services/cartao-credito.service';
 import { Conta } from '../../models/conta.model';
 import { Categoria, Subcategoria } from '../../models/categoria.model';
-import { TipoLancamento, TipoRecorrencia, StatusLancamento, LancamentoResponseDTO, LancamentoRequestDTO } from '../../models/lancamento.model';
+import { 
+  TipoLancamento, 
+  TipoRecorrencia, 
+  StatusLancamento, 
+  LancamentoResponseDTO, 
+  LancamentoRequestDTO,
+  NfceParseRequestDTO,
+  NfceEfetivarRequestDTO 
+} from '../../models/lancamento.model';
 import { CartaoCredito } from '../../models/cartao-credito.model';
 import { FaturaService } from '../../services/fatura.service';
 import { Fatura } from '../../models/fatura.model';
+import { ScannerComponent } from '../../core/scanner/scanner.component';
+import { ResumoNfceComponent } from '../resumo-nfce/resumo-nfce.component';
+import { SefazScraperService } from '../../core/webview/sefaz-scraper.service';
 
 @Component({
   selector: 'app-lancamento-modal',
@@ -33,7 +46,8 @@ import { Fatura } from '../../models/fatura.model';
   imports: [
     CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatDatepickerModule, MatNativeDateModule,
-    MatButtonModule, MatRadioModule, MatSnackBarModule
+    MatButtonModule, MatRadioModule, MatSnackBarModule, MatIconModule,
+    ScannerComponent, ResumoNfceComponent
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -52,6 +66,12 @@ export class LancamentoModalComponent implements OnInit {
   cartoes: CartaoCredito[] = [];
   faturasProjetadas: Fatura[] = [];
 
+  // NFC-e flags
+  podeSerNfce = false;
+  mostrarScanner = false;
+  mostrarResumoNfce = false;
+  previewNfceData: LancamentoResponseDTO | null = null;
+
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<LancamentoModalComponent>);
   private lancamentoService = inject(LancamentoService);
@@ -59,6 +79,7 @@ export class LancamentoModalComponent implements OnInit {
   private categoriaService = inject(CategoriaService);
   private cartaoService = inject(CartaoCreditoService);
   private faturaService = inject(FaturaService);
+  private sefazScraper = inject(SefazScraperService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private destroyRef = inject(DestroyRef);
@@ -79,6 +100,7 @@ export class LancamentoModalComponent implements OnInit {
     const parseDate = (d: any) => d ? new Date(d + 'T12:00:00') : null;
 
     this.form = this.fb.group({
+      isNfce: [false],
       descricao: [this.lancamentoAtual?.descricao || '', Validators.required],
       valor: [this.lancamentoAtual?.valor || null, [Validators.required, Validators.min(0.01)]],
       conta: [null, Validators.required],
@@ -102,13 +124,36 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('categoria')?.setValidators(Validators.required);
     }
 
+    // Lógica NFC-e de Categoria
     this.form.get('categoria')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(cat => {
       if (cat) {
         this.subcategoriasFiltradas = this.subcategorias.filter(s => s.categoria.id === cat.id);
+        
+        // Ativar flag NFC-e se for categoria compativel
+        if (/mercado|farmácia|farmacia|padaria/i.test(cat.nome)) {
+          this.podeSerNfce = true;
+        } else {
+          this.podeSerNfce = false;
+          this.form.get('isNfce')?.setValue(false);
+        }
+
       } else {
         this.subcategoriasFiltradas = [];
+        this.podeSerNfce = false;
+        this.form.get('isNfce')?.setValue(false);
       }
       this.form.get('subcategoria')?.setValue(null);
+    });
+
+    // Lógica quando ativa NFC-e
+    this.form.get('isNfce')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(isNfce => {
+      if (isNfce) {
+        this.form.get('descricao')?.disable();
+        this.form.get('valor')?.disable();
+      } else {
+        this.form.get('descricao')?.enable();
+        this.form.get('valor')?.enable();
+      }
     });
 
     this.form.get('tipoRecorrencia')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(rec => {
@@ -229,6 +274,111 @@ export class LancamentoModalComponent implements OnInit {
     return `${ano}-${mes}-${dia}`;
   }
 
+  // ==== AÇÕES NFC-E ====
+  iniciarScanner() {
+    this.mostrarScanner = true;
+  }
+
+  fecharScanner() {
+    this.mostrarScanner = false;
+    // Se fechou sem resultado e a flag estava marcada, desmarca para restaurar o formulário
+    if (!this.previewNfceData) {
+      this.form.get('isNfce')?.setValue(false);
+    }
+  }
+
+  onScanResult(url: string) {
+    this.fecharScanner();
+    this.snackBar.open('Extraindo itens da Nota Fiscal...', '', { duration: 3000 });
+    
+    const values = this.form.getRawValue();
+
+    this.sefazScraper.extractHtmlFromSefaz(url).pipe(
+      switchMap(htmlContent => {
+        const parseReq: NfceParseRequestDTO = {
+          htmlContent,
+          contaId: values.conta?.id,
+          categoriaId: values.categoria?.id,
+          subcategoriaId: values.subcategoria?.id,
+          dataPagamento: values.dataEfetivacao ? this.formatarData(values.dataEfetivacao) : null
+        };
+        return this.lancamentoService.previewNfce(parseReq);
+      }),
+      catchError(err => {
+        console.error(err);
+        this.snackBar.open('Erro ao processar a Nota Fiscal. Tente novamente ou use o lançamento manual.', 'Fechar', { duration: 5000 });
+        return of(null);
+      })
+    ).subscribe(preview => {
+      if (preview) {
+        this.previewNfceData = preview;
+        this.mostrarResumoNfce = true;
+      }
+    });
+  }
+
+  cancelarNfce() {
+    this.mostrarResumoNfce = false;
+    this.previewNfceData = null;
+  }
+
+  confirmarNfceEfetivacao(lancamentoValidado: LancamentoResponseDTO) {
+    const values = this.form.getRawValue();
+    
+    let faturaId = null;
+    let mesFatura = null;
+    let anoFatura = null;
+
+    if (this.tipo === TipoLancamento.DESPESA && values.cartaoCredito && values.fatura) {
+      if (values.fatura.id) {
+        faturaId = values.fatura.id;
+      } else if (values.fatura.mesAno) {
+        const partes = values.fatura.mesAno.split('/');
+        mesFatura = parseInt(partes[0], 10);
+        anoFatura = parseInt(partes[1], 10);
+      }
+    }
+
+    const lancamentoEfetivar: NfceEfetivarRequestDTO = {
+      tipo: this.tipo,
+      descricao: lancamentoValidado.descricao, // Usar do preview
+      valor: lancamentoValidado.valor, // Usar do preview
+      contaId: values.conta?.id,
+      contaDestinoId: null,
+      cartaoCreditoId: this.tipo === TipoLancamento.DESPESA ? values.cartaoCredito?.id : null,
+      faturaId: faturaId,
+      mesFatura: mesFatura,
+      anoFatura: anoFatura,
+      categoriaId: values.categoria?.id,
+      subcategoriaId: values.subcategoria?.id,
+      dataLancamento: values.dataLancamento ? this.formatarData(values.dataLancamento) : '',
+      dataVencimento: values.dataVencimento ? this.formatarData(values.dataVencimento) : '',
+      dataEfetivacao: values.dataEfetivacao ? this.formatarData(values.dataEfetivacao) : null,
+      observacoes: values.observacoes,
+      tipoRecorrencia: values.tipoRecorrencia,
+      totalParcelas: values.tipoRecorrencia === TipoRecorrencia.PARCELADO ? values.totalParcelas : null,
+      status: values.status,
+      // NFC-e extra data
+      valorBruto: (lancamentoValidado as any).valorBruto,
+      valorDesconto: (lancamentoValidado as any).valorDesconto,
+      chaveNfce: (lancamentoValidado as any).chaveNfce,
+      estabelecimento: lancamentoValidado.estabelecimento as any,
+      itens: (lancamentoValidado as any).itens
+    };
+
+    this.lancamentoService.efetivarNfce(lancamentoEfetivar).subscribe({
+      next: () => {
+        this.snackBar.open('Lançamento e itens salvos com sucesso!', 'Fechar', { duration: 3000 });
+        this.dialogRef.close(true);
+      },
+      error: err => {
+        console.error(err);
+        this.snackBar.open('Erro ao salvar NFC-e.', 'Fechar', { duration: 3000 });
+      }
+    });
+  }
+
+  // ==== AÇÕES PADRÃO ====
   salvar() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -284,6 +434,7 @@ export class LancamentoModalComponent implements OnInit {
       faturaId: faturaId,
       mesFatura: mesFatura,
       anoFatura: anoFatura,
+      categoriaId: values.categoria?.id,
       subcategoriaId: values.subcategoria?.id,
       dataLancamento: values.dataLancamento ? this.formatarData(values.dataLancamento) : '',
       dataVencimento: values.dataVencimento ? this.formatarData(values.dataVencimento) : '',

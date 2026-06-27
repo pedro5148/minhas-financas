@@ -11,6 +11,8 @@ import localePt from '@angular/common/locales/pt';
 
 registerLocaleData(localePt);
 
+import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }), 
@@ -18,6 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(withInterceptors([errorInterceptor])),
     { provide: LOCALE_ID, useValue: 'pt-BR' },
-    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' }
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' },
+    InAppBrowser
   ]
 };

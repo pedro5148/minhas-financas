@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0",
+    "start": "ng serve --host 0.0.0.0 --disable-host-check --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -20,6 +20,16 @@
     "@angular/platform-browser": "^18.2.0",
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
+    "@awesome-cordova-plugins/core": "^9.2.0",
+    "@awesome-cordova-plugins/in-app-browser": "^9.2.0",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/cli": "^7.6.7",
+    "@capacitor/core": "^8.4.1",
+    "@zxing/browser": "^0.2.0",
+    "@zxing/library": "^0.21.3",
+    "@zxing/ngx-scanner": "^21.0.0",
+    "cordova-plugin-inappbrowser": "^7.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"

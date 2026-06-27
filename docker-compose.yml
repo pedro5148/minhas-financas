@@ -8,4 +8,6 @@ services:
       - ./frontend:/app
     ports:
       - "4200:4200"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: npm start

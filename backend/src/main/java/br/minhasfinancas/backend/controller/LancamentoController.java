@@ -65,9 +65,15 @@ public class LancamentoController {
         service.excluir(id);
     }
 
-    @PostMapping("/nfce")
-    public ResponseEntity<LancamentoResponseDTO> importarNfce(
+    @PostMapping("/nfce/preview")
+    public ResponseEntity<LancamentoResponseDTO> previewNfce(
             @Valid @RequestBody br.minhasfinancas.backend.dto.NfceParseRequestDTO dto) {
-        return ResponseEntity.ok(processadorNfceService.processarEfetivarNfce(dto));
+        return ResponseEntity.ok(processadorNfceService.previewNfce(dto));
+    }
+
+    @PostMapping("/nfce/efetivar")
+    public ResponseEntity<LancamentoResponseDTO> efetivarNfce(
+            @Valid @RequestBody br.minhasfinancas.backend.dto.NfceEfetivarRequestDTO dto) {
+        return ResponseEntity.ok(processadorNfceService.efetivarNfce(dto));
     }
 }
