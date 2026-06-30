@@ -34,11 +34,6 @@ public class LancamentoSpecification {
                 predicates.add(cb.between(root.get("dataLancamento"), start, end));
             }
 
-            // Para evitar repetição de fetch nas queries count do paginator
-            if (Long.class != query.getResultType()) {
-                // os fetches agora são manipulados pelo @EntityGraph no repository
-            }
-
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

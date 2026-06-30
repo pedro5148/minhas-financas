@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,7 +74,7 @@ public class NfceParserService {
         for (Element row : rows) {
             ExtractedItemDTO item = new ExtractedItemDTO();
 
-            item.setName(row.select("span.txtTit").first().text().trim());
+            item.setName(Objects.requireNonNull(row.select("span.txtTit").first()).text().trim());
 
             String codeRaw = row.select("span.RCod").text();
             item.setCode(codeRaw.replaceAll("[^0-9]", ""));

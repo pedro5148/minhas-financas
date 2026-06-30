@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class LancamentoResponseDTO {
@@ -32,5 +33,5 @@ public class LancamentoResponseDTO {
     private BigDecimal valorBruto;
     private BigDecimal valorDesconto;
     private EstabelecimentoResponseDTO estabelecimento;
-    private java.util.List<ItemLancamentoResponseDTO> itens;
+    private List<ItemLancamentoResponseDTO> itens;
 }

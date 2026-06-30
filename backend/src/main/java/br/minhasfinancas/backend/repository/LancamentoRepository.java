@@ -2,6 +2,7 @@ package br.minhasfinancas.backend.repository;
 
 import br.minhasfinancas.backend.enums.TipoLancamento;
 import br.minhasfinancas.backend.model.Lancamento;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -36,10 +39,10 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long>, J
         long countByFaturaId(Long faturaId);
 
         @EntityGraph(attributePaths = { "conta", "contaDestino", "categoria", "subcategoria", "fatura" })
-        Page<Lancamento> findAll(Specification<Lancamento> spec, Pageable pageable);
+        Page<Lancamento> findAll(@NonNull Specification<Lancamento> spec, @NonNull Pageable pageable);
 
         @EntityGraph(attributePaths = { "conta", "contaDestino", "categoria", "subcategoria", "fatura" })
-        Page<Lancamento> findAll(Pageable pageable);
+        Page<Lancamento> findAll(@NonNull Pageable pageable);
 
         @EntityGraph(attributePaths = { "conta", "contaDestino", "categoria", "subcategoria", "fatura" })
         Page<Lancamento> findByTipo(TipoLancamento tipo, Pageable pageable);
@@ -58,4 +61,6 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long>, J
         boolean existsBySubcategoriaId(Long subcategoriaId);
 
         boolean existsByChaveNfce(String chaveNfce);
+
+        // Optional<Lancamento> findByChaveNfce(String chaveNfce);
 }

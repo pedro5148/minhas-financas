@@ -31,7 +31,11 @@ public class FaturaService {
     private final LancamentoRepository lancamentoRepository;
     private final FaturaMapper mapper;
 
-    public FaturaService(FaturaRepository faturaRepository, CartaoCreditoRepository cartaoRepository, LancamentoRepository lancamentoRepository, FaturaMapper mapper) {
+    public FaturaService(
+            FaturaRepository faturaRepository,
+            CartaoCreditoRepository cartaoRepository,
+            LancamentoRepository lancamentoRepository,
+            FaturaMapper mapper) {
         this.faturaRepository = faturaRepository;
         this.cartaoRepository = cartaoRepository;
         this.lancamentoRepository = lancamentoRepository;
@@ -40,7 +44,7 @@ public class FaturaService {
 
     public List<FaturaResponseDTO> buscarPorCartao(Long cartaoId) {
         return faturaRepository.findByCartaoId(cartaoId).stream()
-                .map(mapper::toResponseDTO)
+                .map(f -> mapper.toResponseDTO(f))
                 .collect(Collectors.toList());
     }
 
@@ -118,7 +122,6 @@ public class FaturaService {
         return faturaRepository.save(nova);
     }
 
-
     @Transactional
     public Fatura obterOuCriarFatura(Long cartaoId, LocalDate dataCompra) {
         CartaoCredito cartao = cartaoRepository.findById(cartaoId)
@@ -165,8 +168,8 @@ public class FaturaService {
         
         List<Lancamento> despesas = lancamentoRepository.findByFaturaId(faturaId);
         BigDecimal total = despesas.stream()
-                .map(Lancamento::getValor)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(l -> l.getValor())
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
                 
         fatura.setValorTotal(total);
         faturaRepository.save(fatura);

@@ -1,26 +1,23 @@
 package br.minhasfinancas.backend.service;
 
+import br.minhasfinancas.backend.dto.*;
+import br.minhasfinancas.backend.mapper.LancamentoMapper;
+import br.minhasfinancas.backend.model.*;
+import br.minhasfinancas.backend.repository.LancamentoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.minhasfinancas.backend.dto.ExtractedItemDTO;
-import br.minhasfinancas.backend.dto.ExtractedNfceDTO;
-import br.minhasfinancas.backend.dto.LancamentoResponseDTO;
-import br.minhasfinancas.backend.dto.NfceParseRequestDTO;
 import br.minhasfinancas.backend.enums.StatusLancamento;
 import br.minhasfinancas.backend.enums.TipoLancamento;
 import br.minhasfinancas.backend.exception.RegraNegocioException;
-import br.minhasfinancas.backend.model.Estabelecimento;
-import br.minhasfinancas.backend.model.Lancamento;
-import br.minhasfinancas.backend.model.Produto;
-import br.minhasfinancas.backend.model.ItemLancamento;
 import br.minhasfinancas.backend.repository.EstabelecimentoRepository;
 import br.minhasfinancas.backend.repository.ProdutoRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -31,8 +28,8 @@ public class ProcessadorNfceService {
     private final EstabelecimentoRepository estabelecimentoRepository;
     private final ProdutoRepository produtoRepository;
     private final LancamentoService lancamentoService;
-    private final br.minhasfinancas.backend.repository.LancamentoRepository lancamentoRepository;
-    private final br.minhasfinancas.backend.mapper.LancamentoMapper lancamentoMapper;
+    private final LancamentoRepository lancamentoRepository;
+    private final LancamentoMapper lancamentoMapper;
 
     @Transactional
     public LancamentoResponseDTO previewNfce(NfceParseRequestDTO request) {
@@ -60,15 +57,16 @@ public class ProcessadorNfceService {
 
         lancamento.setConta(lancamentoService.buscarContaPorId(request.getContaId()));
         lancamento.setCategoria(lancamentoService.buscarCategoriaPorId(request.getCategoriaId()));
-        
+
         if (request.getSubcategoriaId() != null) {
-            br.minhasfinancas.backend.model.Subcategoria sub = lancamentoService.buscarSubcategoriaPorId(request.getSubcategoriaId());
+            Subcategoria sub = lancamentoService
+                    .buscarSubcategoriaPorId(request.getSubcategoriaId());
             if (!sub.getCategoria().getId().equals(request.getCategoriaId())) {
-                throw new RegraNegocioException("A Subcategoria informada não pertence à Categoria selecionada.");
+                throw new RegraNegocioException("A subcategoria informada não pertence à Categoria selecionada.");
             }
             lancamento.setSubcategoria(sub);
         }
-        
+
         LocalDate dataRealizacao = request.getDataPagamento();
         if (dataRealizacao == null) {
             dataRealizacao = nfce.getEmissionDate() != null ? nfce.getEmissionDate().toLocalDate() : LocalDate.now();
@@ -76,18 +74,18 @@ public class ProcessadorNfceService {
         lancamento.setDataLancamento(dataRealizacao);
         lancamento.setDataVencimento(dataRealizacao);
         lancamento.setDataEfetivacao(dataRealizacao);
-        
+
         lancamento.setTipo(TipoLancamento.DESPESA);
         lancamento.setStatus(StatusLancamento.EFETIVADO);
 
         lancamento.setValorBruto(nfce.getTotalValue().add(nfce.getDiscount()));
         lancamento.setValorDesconto(nfce.getDiscount());
         lancamento.setValor(nfce.getTotalValue());
-        
+
         lancamento.setChaveNfce(nfce.getAccessKey());
 
         lancamento.setEstabelecimento(estabelecimento);
-        lancamento.setDescricao("Compra de Mercado - " + estabelecimento.getNome());
+        lancamento.setDescricao("Mercado - " + estabelecimento.getNome());
 
         for (ExtractedItemDTO dtoItem : nfce.getItems()) {
             Produto produto = resolverProduto(dtoItem.getName(), dtoItem.getCode(), dtoItem.getUnit());
@@ -104,7 +102,7 @@ public class ProcessadorNfceService {
     }
 
     @Transactional
-    public LancamentoResponseDTO efetivarNfce(br.minhasfinancas.backend.dto.NfceEfetivarRequestDTO dto) {
+    public LancamentoResponseDTO efetivarNfce(NfceEfetivarRequestDTO dto) {
         log.info("Efetivando NFC-e na base de dados...");
 
         if (dto.getChaveNfce() != null && !dto.getChaveNfce().isBlank()) {
@@ -137,15 +135,20 @@ public class ProcessadorNfceService {
         lancamento.setTotalParcelas(1);
 
         if (dto.getEstabelecimento() != null) {
-            Estabelecimento est = resolverEstabelecimento(dto.getEstabelecimento().getCnpj(), dto.getEstabelecimento().getNome());
+            Estabelecimento est = resolverEstabelecimento(
+                    dto.getEstabelecimento().getCnpj(),
+                    dto.getEstabelecimento().getNome());
             lancamento.setEstabelecimento(est);
         }
 
         if (dto.getItens() != null) {
-            for (br.minhasfinancas.backend.dto.ItemLancamentoResponseDTO dtoItem : dto.getItens()) {
+            for (ItemLancamentoResponseDTO dtoItem : dto.getItens()) {
                 Produto produto = null;
                 if (dtoItem.getProduto() != null) {
-                    produto = resolverProduto(dtoItem.getProduto().getNome(), dtoItem.getProduto().getCodigo(), dtoItem.getProduto().getUnidade());
+                    produto = resolverProduto(
+                            dtoItem.getProduto().getNome(),
+                            dtoItem.getProduto().getCodigo(),
+                            dtoItem.getProduto().getUnidade());
                 }
 
                 ItemLancamento item = new ItemLancamento();
@@ -162,8 +165,8 @@ public class ProcessadorNfceService {
 
     private void validarIntegridadeMatematica(ExtractedNfceDTO nfce) {
         BigDecimal somaItens = nfce.getItems().stream()
-                .map(ExtractedItemDTO::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(item -> item.getTotalPrice())
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         BigDecimal totalEsperadoBruto = nfce.getTotalValue().add(nfce.getDiscount());
         BigDecimal diferenca = somaItens.subtract(totalEsperadoBruto).abs();
@@ -192,13 +195,17 @@ public class ProcessadorNfceService {
                 return prodPorCodigo.get();
         }
 
-        return produtoRepository.findByNomeIgnoreCase(nome)
-                .orElseGet(() -> {
-                    Produto novo = new Produto();
-                    novo.setNome(nome);
-                    novo.setCodigo(codigo);
-                    novo.setUnidade(unidade);
-                    return produtoRepository.save(novo);
-                });
+        List<Produto> produtosPorNome = produtoRepository.findByNomeIgnoreCase(nome);
+
+        if (!produtosPorNome.isEmpty()) {
+            return produtosPorNome.get(0);
+        }
+
+        Produto novo = new Produto();
+        novo.setNome(nome);
+        novo.setCodigo(codigo);
+        novo.setUnidade(unidade);
+
+        return produtoRepository.save(novo);
     }
 }

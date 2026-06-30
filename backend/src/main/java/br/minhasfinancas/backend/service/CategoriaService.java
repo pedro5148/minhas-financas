@@ -53,7 +53,6 @@ public class CategoriaService {
             subcategoria.setNome("Outros");
         }
         subcategoriaRepository.save(subcategoria);
-
         return mapper.toResponseDTO(categoriaSalva);
     }
 

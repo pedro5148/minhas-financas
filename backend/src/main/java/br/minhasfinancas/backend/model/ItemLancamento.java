@@ -19,11 +19,17 @@ public class ItemLancamento {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lancamento_id", nullable = false, foreignKey = @ForeignKey(name = "fk_item_lancamento"))
+    @JoinColumn(
+            name = "lancamento_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_item_lancamento"))
     private Lancamento lancamento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produto_id", nullable = false, foreignKey = @ForeignKey(name = "fk_item_produto"))
+    @JoinColumn(
+            name = "produto_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_item_produto"))
     private Produto produto;
 
     @Column(nullable = false, precision = 15, scale = 4)

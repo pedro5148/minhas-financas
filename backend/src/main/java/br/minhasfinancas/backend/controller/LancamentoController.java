@@ -2,8 +2,11 @@ package br.minhasfinancas.backend.controller;
 
 import br.minhasfinancas.backend.dto.LancamentoRequestDTO;
 import br.minhasfinancas.backend.dto.LancamentoResponseDTO;
+import br.minhasfinancas.backend.dto.NfceEfetivarRequestDTO;
+import br.minhasfinancas.backend.dto.NfceParseRequestDTO;
 import br.minhasfinancas.backend.service.LancamentoService;
 import br.minhasfinancas.backend.enums.TipoLancamento;
+import br.minhasfinancas.backend.service.ProcessadorNfceService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +21,9 @@ import org.springframework.http.ResponseEntity;
 public class LancamentoController {
 
     private final LancamentoService service;
-    private final br.minhasfinancas.backend.service.ProcessadorNfceService processadorNfceService;
+    private final ProcessadorNfceService processadorNfceService;
 
-    public LancamentoController(LancamentoService service, br.minhasfinancas.backend.service.ProcessadorNfceService processadorNfceService) {
+    public LancamentoController(LancamentoService service, ProcessadorNfceService processadorNfceService) {
         this.service = service;
         this.processadorNfceService = processadorNfceService;
     }
@@ -67,13 +70,13 @@ public class LancamentoController {
 
     @PostMapping("/nfce/preview")
     public ResponseEntity<LancamentoResponseDTO> previewNfce(
-            @Valid @RequestBody br.minhasfinancas.backend.dto.NfceParseRequestDTO dto) {
+            @Valid @RequestBody NfceParseRequestDTO dto) {
         return ResponseEntity.ok(processadorNfceService.previewNfce(dto));
     }
 
     @PostMapping("/nfce/efetivar")
     public ResponseEntity<LancamentoResponseDTO> efetivarNfce(
-            @Valid @RequestBody br.minhasfinancas.backend.dto.NfceEfetivarRequestDTO dto) {
+            @Valid @RequestBody NfceEfetivarRequestDTO dto) {
         return ResponseEntity.ok(processadorNfceService.efetivarNfce(dto));
     }
 }

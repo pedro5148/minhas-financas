@@ -38,19 +38,29 @@ public class Lancamento {
         private BigDecimal valor;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "conta_id", nullable = false, foreignKey = @ForeignKey(name = "fk_lancamentos_conta_id"))
+        @JoinColumn(
+                name = "conta_id",
+                nullable = false,
+                foreignKey = @ForeignKey(name = "fk_lancamentos_conta_id"))
         private Conta conta;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "conta_destino_id", foreignKey = @ForeignKey(name = "fk_lancamentos_conta_destino_id"))
+        @JoinColumn(
+                name = "conta_destino_id",
+                foreignKey = @ForeignKey(name = "fk_lancamentos_conta_destino_id"))
         private Conta contaDestino; // Apenas para transferências
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "categoria_id", nullable = false, foreignKey = @ForeignKey(name = "fk_lancamentos_categoria_id"))
+        @JoinColumn(
+                name = "categoria_id",
+                nullable = false,
+                foreignKey = @ForeignKey(name = "fk_lancamentos_categoria_id"))
         private Categoria categoria;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "subcategoria_id", foreignKey = @ForeignKey(name = "fk_lancamentos_subcategoria_id"))
+        @JoinColumn(
+                name = "subcategoria_id",
+                foreignKey = @ForeignKey(name = "fk_lancamentos_subcategoria_id"))
         private Subcategoria subcategoria;
 
         @Column(name = "data_lancamento", nullable = false)
@@ -80,11 +90,15 @@ public class Lancamento {
         private Integer totalParcelas;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "lancamento_parcelado_id", foreignKey = @ForeignKey(name = "fk_lancamentos_parcelados_id"))
+        @JoinColumn(
+                name = "lancamento_parcelado_id",
+                foreignKey = @ForeignKey(name = "fk_lancamentos_parcelados_id"))
         private LancamentoParcelado lancamentoParcelado;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "fatura_id", foreignKey = @ForeignKey(name = "fk_lancamentos_fatura_id"))
+        @JoinColumn(
+                name = "fatura_id",
+                foreignKey = @ForeignKey(name = "fk_lancamentos_fatura_id"))
         private Fatura fatura;
 
         @Column(precision = 15, scale = 2)
@@ -97,7 +111,9 @@ public class Lancamento {
         private String chaveNfce;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "estabelecimento_id", foreignKey = @ForeignKey(name = "fk_lancamento_estabelecimento"))
+        @JoinColumn(
+                name = "estabelecimento_id",
+                foreignKey = @ForeignKey(name = "fk_lancamento_estabelecimento"))
         private Estabelecimento estabelecimento;
 
         @OneToMany(mappedBy = "lancamento", cascade = CascadeType.ALL, orphanRemoval = true)

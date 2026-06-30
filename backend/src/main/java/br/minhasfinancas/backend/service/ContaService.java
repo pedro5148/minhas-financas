@@ -24,7 +24,7 @@ public class ContaService {
 
     public List<ContaResponseDTO> listarTodos() {
         return repository.findAll().stream()
-                .map(mapper::toResponseDTO)
+                .map(mapper::toResponseDTO) //DUVIDA
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +62,7 @@ public class ContaService {
     private void resetOutrasContasPadrao(Long idIgnorar) {
         List<Conta> contasPadrao = repository.findByPadraoTrue();
         for (Conta c : contasPadrao) {
-            if (idIgnorar == null || !c.getId().equals(idIgnorar)) {
+            if (!c.getId().equals(idIgnorar)) {
                 c.setPadrao(false);
                 repository.save(c);
             }

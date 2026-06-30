@@ -4,16 +4,17 @@ import br.minhasfinancas.backend.dto.LancamentoRequestDTO;
 import br.minhasfinancas.backend.dto.LancamentoResponseDTO;
 import br.minhasfinancas.backend.enums.StatusLancamento;
 import br.minhasfinancas.backend.enums.TipoRecorrencia;
+import br.minhasfinancas.backend.exception.RegraNegocioException;
 import br.minhasfinancas.backend.mapper.LancamentoMapper;
-import br.minhasfinancas.backend.model.Fatura;
-import br.minhasfinancas.backend.model.Lancamento;
+import br.minhasfinancas.backend.model.*;
 import br.minhasfinancas.backend.repository.*;
 import br.minhasfinancas.backend.enums.TipoLancamento;
+import br.minhasfinancas.backend.service.strategy.LancamentoStrategy;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,102 +30,57 @@ public class LancamentoService {
     private final LancamentoRepository repository;
     private final FaturaService faturaService;
     private final ContaRepository contaRepository;
-    private final br.minhasfinancas.backend.repository.CategoriaRepository categoriaRepository;
+    private final CategoriaRepository categoriaRepository;
     private final SubcategoriaRepository subcategoriaRepository;
     private final LancamentoMapper mapper;
+    private final List<LancamentoStrategy> strategies;
 
     public LancamentoService(LancamentoRepository repository, FaturaService faturaService,
             ContaRepository contaRepository,
-            br.minhasfinancas.backend.repository.CategoriaRepository categoriaRepository,
-            SubcategoriaRepository subcategoriaRepository, LancamentoMapper mapper) {
+            CategoriaRepository categoriaRepository,
+            SubcategoriaRepository subcategoriaRepository, LancamentoMapper mapper,
+            List<LancamentoStrategy> strategies) {
         this.repository = repository;
         this.faturaService = faturaService;
         this.contaRepository = contaRepository;
         this.categoriaRepository = categoriaRepository;
         this.subcategoriaRepository = subcategoriaRepository;
         this.mapper = mapper;
+        this.strategies = strategies;
     }
 
-    public Page<LancamentoResponseDTO> listar(String descricao, TipoLancamento tipo, Integer mes, Integer ano,
+    public Page<LancamentoResponseDTO> listar(String descricao,
+            TipoLancamento tipo,
+            Integer mes,
+            Integer ano,
             Pageable pageable) {
-        org.springframework.data.jpa.domain.Specification<Lancamento> spec = LancamentoSpecification
+        Specification<Lancamento> spec = LancamentoSpecification
                 .filtroAvancado(descricao, tipo, mes, ano);
         Page<Lancamento> paginasEntidade = repository.findAll(spec, pageable);
-        return paginasEntidade.map(mapper::toResponseDTO);
+        return paginasEntidade.map(l -> mapper.toResponseDTO(l));
     }
 
     public List<LancamentoResponseDTO> listarPorMesAno(int mes, int ano) {
         LocalDate inicioMes = LocalDate.of(ano, mes, 1);
         LocalDate fimMes = inicioMes.withDayOfMonth(inicioMes.lengthOfMonth());
         return repository.findByMesAnoVencimento(inicioMes, fimMes).stream()
-                .map(mapper::toResponseDTO)
+                .map(l -> mapper.toResponseDTO(l))
                 .collect(Collectors.toList());
     }
 
     public List<LancamentoResponseDTO> listarPorFatura(Long faturaId) {
         return repository.findByFaturaId(faturaId).stream()
-                .map(mapper::toResponseDTO)
+                .map(l -> mapper.toResponseDTO(l))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public List<LancamentoResponseDTO> criarLancamentos(LancamentoRequestDTO dto) {
-        Lancamento lancamentoBase = preencherEntidadesRelacionadas(mapper.toEntity(dto), dto);
-        List<Lancamento> lancamentosSalvos = new ArrayList<>();
-
-        if (lancamentoBase.getTipoRecorrencia() == TipoRecorrencia.PARCELADO) {
-            int parcelas = lancamentoBase.getTotalParcelas() != null ? lancamentoBase.getTotalParcelas() : 1;
-            BigDecimal valorParcela = lancamentoBase.getValor().divide(BigDecimal.valueOf(parcelas),
-                    RoundingMode.HALF_UP);
-
-            BigDecimal valorTotalCalculado = valorParcela.multiply(BigDecimal.valueOf(parcelas));
-            BigDecimal diferenca = lancamentoBase.getValor().subtract(valorTotalCalculado);
-
-            for (int i = 1; i <= parcelas; i++) {
-                Lancamento p = copiarLancamento(lancamentoBase);
-                p.setParcelaAtual(i);
-
-                if (i == parcelas && diferenca.compareTo(BigDecimal.ZERO) != 0) {
-                    p.setValor(valorParcela.add(diferenca));
-                } else {
-                    p.setValor(valorParcela);
-                }
-
-                if (i > 1) {
-                    p.setDataLancamento(lancamentoBase.getDataLancamento().plusMonths(i - 1));
-                    p.setDataVencimento(lancamentoBase.getDataVencimento().plusMonths(i - 1));
-                }
-
-                lancamentosSalvos.add(repository.save(p));
-            }
-        } else if (lancamentoBase.getTipoRecorrencia() == TipoRecorrencia.MENSAL) {
-            int parcelas = 12;
-            lancamentoBase.setTotalParcelas(parcelas);
-            for (int i = 1; i <= parcelas; i++) {
-                Lancamento p = copiarLancamento(lancamentoBase);
-                p.setParcelaAtual(i);
-                p.setStatus(i == 1 ? lancamentoBase.getStatus() : StatusLancamento.PENDENTE);
-
-                if (i > 1) {
-                    p.setDataLancamento(lancamentoBase.getDataLancamento().plusMonths(i - 1));
-                    p.setDataVencimento(lancamentoBase.getDataVencimento().plusMonths(i - 1));
-                    p.setDataEfetivacao(null);
-                }
-                lancamentosSalvos.add(repository.save(p));
-            }
-        } else {
-            lancamentoBase.setParcelaAtual(1);
-            lancamentoBase.setTotalParcelas(1);
-            lancamentosSalvos.add(repository.save(lancamentoBase));
-        }
-
-        for (Lancamento salvo : lancamentosSalvos) {
-            if (salvo.getFatura() != null) {
-                faturaService.atualizarValorFatura(salvo.getFatura().getId());
-            }
-        }
-
-        return lancamentosSalvos.stream().map(mapper::toResponseDTO).collect(Collectors.toList());
+        LancamentoStrategy strategy = strategies.stream()
+                .filter(s -> s.isApplicable(dto))
+                .findFirst()
+                .orElseThrow(() -> new RegraNegocioException("Estratégia não suportada para o lançamento solicitado."));
+        return strategy.processar(dto);
     }
 
     @Transactional
@@ -133,15 +89,15 @@ public class LancamentoService {
             return new ArrayList<>();
         }
 
-        LocalDate minDate = lote.stream().map(LancamentoRequestDTO::getDataLancamento).min(LocalDate::compareTo)
+        LocalDate minDate = lote.stream().map(d -> d.getDataLancamento()).min((d1, d2) -> d1.compareTo(d2))
                 .orElse(LocalDate.now());
-        LocalDate maxDate = lote.stream().map(LancamentoRequestDTO::getDataLancamento).max(LocalDate::compareTo)
+        LocalDate maxDate = lote.stream().map(d -> d.getDataLancamento()).max((d1, d2) -> d1.compareTo(d2))
                 .orElse(LocalDate.now());
 
         List<Lancamento> existentes = repository.findByDataLancamentoBetween(minDate, maxDate);
 
         Set<String> assinaturasExistentes = existentes.stream()
-                .map(this::gerarAssinatura)
+                .map(l -> this.gerarAssinatura(l))
                 .collect(Collectors.toSet());
 
         List<Lancamento> lancamentosParaSalvar = new ArrayList<>();
@@ -167,7 +123,7 @@ public class LancamentoService {
             }
         }
 
-        return salvos.stream().map(mapper::toResponseDTO).collect(Collectors.toList());
+        return salvos.stream().map(l -> mapper.toResponseDTO(l)).collect(Collectors.toList());
     }
 
     private String gerarAssinatura(Lancamento l) {
@@ -259,15 +215,15 @@ public class LancamentoService {
             lancamento.setCategoria(categoriaRepository.findById(dto.getCategoriaId())
                     .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada")));
         } else {
-            throw new br.minhasfinancas.backend.exception.RegraNegocioException("Categoria é obrigatória.");
+            throw new RegraNegocioException("Categoria é obrigatória.");
         }
 
         if (dto.getSubcategoriaId() != null) {
-            br.minhasfinancas.backend.model.Subcategoria sub = subcategoriaRepository.findById(dto.getSubcategoriaId())
+            Subcategoria sub = subcategoriaRepository.findById(dto.getSubcategoriaId())
                     .orElseThrow(() -> new EntityNotFoundException("Subcategoria não encontrada"));
 
             if (!sub.getCategoria().getId().equals(dto.getCategoriaId())) {
-                throw new br.minhasfinancas.backend.exception.RegraNegocioException(
+                throw new RegraNegocioException(
                         "A Subcategoria informada não pertence à Categoria selecionada.");
             }
             lancamento.setSubcategoria(sub);
@@ -319,21 +275,20 @@ public class LancamentoService {
         if (salvo.getFatura() != null) {
             faturaService.atualizarValorFatura(salvo.getFatura().getId());
         }
-
         return mapper.toResponseDTO(salvo);
     }
 
-    public br.minhasfinancas.backend.model.Conta buscarContaPorId(Long id) {
+    public Conta buscarContaPorId(Long id) {
         return contaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Conta não encontrada para o ID: " + id));
     }
 
-    public br.minhasfinancas.backend.model.Categoria buscarCategoriaPorId(Long id) {
+    public Categoria buscarCategoriaPorId(Long id) {
         return categoriaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o ID: " + id));
     }
 
-    public br.minhasfinancas.backend.model.Subcategoria buscarSubcategoriaPorId(Long id) {
+    public Subcategoria buscarSubcategoriaPorId(Long id) {
         return subcategoriaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Subcategoria não encontrada para o ID: " + id));
     }

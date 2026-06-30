@@ -26,7 +26,8 @@ public class CartaoCreditoService {
     private final CartaoCreditoMapper mapper;
     private final FaturaRepository faturaRepository;
 
-    public CartaoCreditoService(CartaoCreditoRepository repository, ContaRepository contaRepository, CartaoCreditoMapper mapper, FaturaRepository faturaRepository) {
+    public CartaoCreditoService(CartaoCreditoRepository repository, ContaRepository contaRepository,
+            CartaoCreditoMapper mapper, FaturaRepository faturaRepository) {
         this.repository = repository;
         this.contaRepository = contaRepository;
         this.mapper = mapper;
@@ -35,7 +36,7 @@ public class CartaoCreditoService {
 
     public List<CartaoCreditoResponseDTO> listarTodos(Integer mes, Integer ano) {
         List<CartaoCreditoResponseDTO> cartoes = repository.findAll().stream()
-                .map(mapper::toResponseDTO)
+                .map(c -> mapper.toResponseDTO(c))
                 .collect(Collectors.toList());
 
         if (mes != null && ano != null) {
@@ -44,9 +45,8 @@ public class CartaoCreditoService {
             Map<Long, BigDecimal> valoresPorCartao = faturas.stream()
                     .collect(Collectors.toMap(
                             f -> f.getCartao().getId(),
-                            Fatura::getValorTotal,
-                            (v1, v2) -> v1 // in case of duplicates, though there shouldn't be
-                    ));
+                            f -> f.getValorTotal(),
+                            (v1, v2) -> v1));
 
             cartoes.forEach(cartao -> {
                 cartao.setValorFatura(valoresPorCartao.getOrDefault(cartao.getId(), BigDecimal.ZERO));
@@ -78,7 +78,7 @@ public class CartaoCreditoService {
             cartao.setPrincipal(dto.getPrincipal());
             if (dto.getContaPadraoId() != null) {
                 Conta conta = contaRepository.findById(dto.getContaPadraoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Conta Padrão não encontrada"));
+                        .orElseThrow(() -> new EntityNotFoundException("Conta Padrão não encontrada"));
                 cartao.setContaPadrao(conta);
             }
             return mapper.toResponseDTO(repository.save(cartao));
@@ -90,6 +90,6 @@ public class CartaoCreditoService {
         if (!repository.existsById(id)) {
             throw new EntityNotFoundException("Cartão não encontrado");
         }
-        repository.deleteById(id);
+        repository.deleteById(id); //DUVIDA
     }
 }
