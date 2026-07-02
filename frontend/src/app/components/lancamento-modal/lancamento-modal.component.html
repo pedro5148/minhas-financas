@@ -2,8 +2,8 @@
 <mat-dialog-content>
   <form [formGroup]="form" class="b2b-form" *ngIf="!mostrarResumoNfce">
 
-
-    <div class="form-group" *ngIf="!form.get('isNfce')?.value">
+    <!-- 1. CAMPOS BASE (Sempre visíveis) -->
+    <div class="form-group">
       <label for="descricao">Descrição <span class="required">*</span></label>
       <input id="descricao" type="text" formControlName="descricao" placeholder="Ex: Conta de Luz"
         [class.is-invalid]="form.get('descricao')?.invalid && form.get('descricao')?.touched" class="input-lg" />
@@ -51,10 +51,11 @@
 
     <ng-template #normalLayout>
       <div class="form-row">
-        <div class="form-group" *ngIf="!form.get('isNfce')?.value">
-          <label for="valor">Valor (R$) <span class="required">*</span></label>
+        <div class="form-group">
+          <label for="valor">Valor Total (R$) <span class="required">*</span></label>
           <input id="valor" type="number" formControlName="valor" placeholder="Ex: 150.00"
             [class.is-invalid]="form.get('valor')?.invalid && form.get('valor')?.touched" />
+          <small class="hint-text" *ngIf="form.get('entryMethod')?.value === 'manual'">Cálculo automático baseado nos itens abaixo.</small>
           <div class="error-text" *ngIf="form.get('valor')?.invalid && form.get('valor')?.touched">
             Insira um valor maior que R$ 0,00.
           </div>
@@ -111,24 +112,84 @@
       </div>
     </div>
 
-    <div class="nfce-toggle-section" *ngIf="podeSerNfce">
-      <div class="toggle-container">
-        <label>
-          <input type="checkbox" formControlName="isNfce" />
-          Importar itens via QR Code da Nota (NFC-e)?
+    <!-- 2. DETALHAMENTO / SELETOR DE MÉTODO -->
+    <div class="entry-method-section" *ngIf="tipo === 'DESPESA' && podeSerNfce">
+      <p class="section-title">Detalhamento da Despesa</p>
+      <div class="radio-cards">
+        <label class="radio-card" [class.selected]="form.get('entryMethod')?.value === 'simples'">
+          <input type="radio" formControlName="entryMethod" value="simples">
+          <span>📝 Lançamento Simples</span>
+        </label>
+        
+        <label class="radio-card" [class.selected]="form.get('entryMethod')?.value === 'qrcode'">
+          <input type="radio" formControlName="entryMethod" value="qrcode">
+          <span>📱 Escanear QR Code</span>
+        </label>
+        
+        <label class="radio-card" [class.selected]="form.get('entryMethod')?.value === 'manual'">
+          <input type="radio" formControlName="entryMethod" value="manual">
+          <span>📋 Lançamento Manual</span>
         </label>
       </div>
     </div>
 
-    <div class="nfce-scan-action" *ngIf="form.get('isNfce')?.value">
-      <p class="scan-hint">Ao escanear a nota, o valor e a descrição serão preenchidos automaticamente.</p>
+    <div class="nfce-scan-action" *ngIf="form.get('entryMethod')?.value === 'qrcode'">
+      <p class="scan-hint">Ao escanear a nota (NFC-e), os itens e o valor serão preenchidos automaticamente.</p>
       <button mat-raised-button color="accent" type="button" (click)="iniciarScanner()">
         <mat-icon>qr_code_scanner</mat-icon>
         Escanear QR Code
       </button>
     </div>
 
-    <div class="form-row">
+    <!-- 3. LANÇAMENTO MANUAL DE ITENS -->
+    <div class="manual-items-container" formArrayName="itens" *ngIf="form.get('entryMethod')?.value === 'manual'">
+      <div class="items-header">
+        <h4>Itens da Despesa</h4>
+      </div>
+      
+      <div class="items-list">
+        <div class="item-row" *ngFor="let item of itens.controls; let i = index" [formGroupName]="i">
+          <div class="form-group autocomplete-wrapper">
+            <label>Produto</label>
+            <input type="text" formControlName="produtoNome" autocomplete="off" placeholder="Nome do produto" />
+            <ul class="autocomplete-dropdown" *ngIf="filteredProducts[i]?.length">
+              <li *ngFor="let prod of filteredProducts[i]" (click)="selectProduct(i, prod)">
+                <span class="prod-name">{{ prod.nome }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="form-group small-field">
+            <label>Qtd</label>
+            <input type="number" formControlName="quantidade" min="1" />
+          </div>
+
+          <div class="form-group medium-field">
+            <label>V. Unitário (R$)</label>
+            <input type="number" formControlName="valorUnitarioBruto" min="0" step="0.01" />
+          </div>
+
+          <div class="form-group medium-field">
+            <label>Total (R$)</label>
+            <input type="number" formControlName="valorTotalBruto" class="disabled-input" />
+          </div>
+
+          <div class="form-group action-col">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-delete" (click)="removeItem(i)" title="Remover item">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" mat-stroked-button color="primary" class="btn-add-item" (click)="addItem()">
+        <mat-icon>add</mat-icon> Adicionar Linha
+      </button>
+    </div>
+
+    <!-- Data e Status -->
+    <div class="form-row" style="margin-top: 1rem;">
       <div class="form-group-datepicker">
         <label>Data do Lançamento <span class="required">*</span></label>
         <mat-form-field>
@@ -206,5 +267,5 @@
 </mat-dialog-content>
 <mat-dialog-actions align="end" *ngIf="!mostrarResumoNfce">
   <button mat-button (click)="cancelar()" class="btn-cancelar">Cancelar</button>
-  <button mat-raised-button color="primary" (click)="salvar()" class="btn-salvar" *ngIf="!form.get('isNfce')?.value">Salvar</button>
+  <button mat-raised-button color="primary" (click)="salvar()" class="btn-salvar">Salvar</button>
 </mat-dialog-actions>

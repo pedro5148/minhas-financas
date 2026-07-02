@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { CategoriaService } from '../../services/categoria.service';
 import { Categoria, Subcategoria } from '../../models/categoria.model';
@@ -25,7 +26,8 @@ import { Categoria, Subcategoria } from '../../models/categoria.model';
     MatIconModule,
     MatSnackBarModule,
     MatInputModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSlideToggleModule
   ],
   templateUrl: './categoria-modal.component.html',
   styleUrl: './categoria-modal.component.scss'
@@ -55,6 +57,7 @@ export class CategoriaModalComponent implements OnInit {
   ngOnInit(): void {
     this.categoriaForm = this.fb.group({
       nome: [this.modoEdicao ? this.data!.categoria!.nome : '', Validators.required],
+      permiteDetalhamento: [this.modoEdicao ? this.data!.categoria!.permiteDetalhamento : false],
       subcategoriaNome: ['']
     });
 

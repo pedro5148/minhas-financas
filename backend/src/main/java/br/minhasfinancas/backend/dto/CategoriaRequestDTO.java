@@ -9,4 +9,6 @@ public class CategoriaRequestDTO {
     private String nome;
     
     private String subcategoriaNome;
+
+    private Boolean permiteDetalhamento;
 }

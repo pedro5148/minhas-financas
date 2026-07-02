@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface CategoriaMapper {
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "permiteDetalhamento", ignore = true)
     Categoria toEntity(CategoriaRequestDTO dto);
     CategoriaResponseDTO toResponseDTO(Categoria entity);
 }

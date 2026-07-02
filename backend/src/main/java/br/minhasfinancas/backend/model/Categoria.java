@@ -1,6 +1,5 @@
 package br.minhasfinancas.backend.model;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,5 +24,7 @@ public class Categoria {
     @Column(nullable = false, length = 100)
     private String nome;
 
+    @Column(name = "permite_detalhamento", nullable = false)
+    private Boolean permiteDetalhamento = false;
 
 }

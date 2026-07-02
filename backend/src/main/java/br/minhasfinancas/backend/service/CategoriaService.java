@@ -34,7 +34,7 @@ public class CategoriaService {
     }
 
     public List<CategoriaResponseDTO> listarTodos() {
-        return categoriaRepository.findAll().stream()
+        return categoriaRepository.findAllByOrderByNomeAsc().stream()
                 .map(mapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -79,6 +79,9 @@ public class CategoriaService {
     public CategoriaResponseDTO atualizar(Long id, CategoriaRequestDTO dto) {
         return categoriaRepository.findById(id).map(categoria -> {
             categoria.setNome(dto.getNome());
+            if (dto.getPermiteDetalhamento() != null) {
+                categoria.setPermiteDetalhamento(dto.getPermiteDetalhamento());
+            }
             Categoria atualizada = categoriaRepository.save(categoria);
             return mapper.toResponseDTO(atualizada);
         }).orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));

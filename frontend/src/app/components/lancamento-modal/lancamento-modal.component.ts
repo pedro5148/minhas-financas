@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,8 +12,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, of } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
+import { forkJoin, of, Observable } from 'rxjs';
+import { switchMap, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AlertDialogComponent } from '../alert-dialog/alert-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -22,6 +22,7 @@ import { LancamentoService } from '../../services/lancamento.service';
 import { ContaService } from '../../services/conta.service';
 import { CategoriaService } from '../../services/categoria.service';
 import { CartaoCreditoService } from '../../services/cartao-credito.service';
+import { ProdutoService } from '../../services/produto.service';
 import { Conta } from '../../models/conta.model';
 import { Categoria, Subcategoria } from '../../models/categoria.model';
 import { 
@@ -31,7 +32,8 @@ import {
   LancamentoResponseDTO, 
   LancamentoRequestDTO,
   NfceParseRequestDTO,
-  NfceEfetivarRequestDTO 
+  NfceEfetivarRequestDTO,
+  ProdutoResponseDTO
 } from '../../models/lancamento.model';
 import { CartaoCredito } from '../../models/cartao-credito.model';
 import { FaturaService } from '../../services/fatura.service';
@@ -65,6 +67,8 @@ export class LancamentoModalComponent implements OnInit {
   subcategoriasFiltradas: Subcategoria[] = [];
   cartoes: CartaoCredito[] = [];
   faturasProjetadas: Fatura[] = [];
+  
+  filteredProducts: ProdutoResponseDTO[][] = [];
 
   // NFC-e flags
   podeSerNfce = false;
@@ -80,6 +84,7 @@ export class LancamentoModalComponent implements OnInit {
   private cartaoService = inject(CartaoCreditoService);
   private faturaService = inject(FaturaService);
   private sefazScraper = inject(SefazScraperService);
+  private produtoService = inject(ProdutoService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private destroyRef = inject(DestroyRef);
@@ -91,6 +96,10 @@ export class LancamentoModalComponent implements OnInit {
     this.lancamentoAtual = data.lancamento || null;
   }
 
+  get itens(): FormArray {
+    return this.form.get('itens') as FormArray;
+  }
+
   ngOnInit(): void {
     this.inicializarFormulario();
     this.carregarDadosBase();
@@ -100,9 +109,9 @@ export class LancamentoModalComponent implements OnInit {
     const parseDate = (d: any) => d ? new Date(d + 'T12:00:00') : null;
 
     this.form = this.fb.group({
-      isNfce: [false],
+      entryMethod: ['simples'],
       descricao: [this.lancamentoAtual?.descricao || '', Validators.required],
-      valor: [this.lancamentoAtual?.valor || null, [Validators.required, Validators.min(0.01)]],
+      valor: [{value: this.lancamentoAtual?.valor || null, disabled: false}, [Validators.required, Validators.min(0.01)]],
       conta: [null, Validators.required],
       cartaoCredito: [null],
       fatura: [{value: null, disabled: true}],
@@ -115,7 +124,8 @@ export class LancamentoModalComponent implements OnInit {
       observacoes: [this.lancamentoAtual?.observacoes || ''],
       tipoRecorrencia: [{ value: this.lancamentoAtual?.tipoRecorrencia || TipoRecorrencia.NENHUMA, disabled: !!this.lancamentoAtual }, Validators.required],
       totalParcelas: [{ value: this.lancamentoAtual?.totalParcelas || null, disabled: !!this.lancamentoAtual }],
-      status: [this.lancamentoAtual?.status || StatusLancamento.PENDENTE, Validators.required]
+      status: [this.lancamentoAtual?.status || StatusLancamento.PENDENTE, Validators.required],
+      itens: this.fb.array([])
     });
 
     if (this.tipo === TipoLancamento.TRANSFERENCIA) {
@@ -124,35 +134,55 @@ export class LancamentoModalComponent implements OnInit {
       this.form.get('categoria')?.setValidators(Validators.required);
     }
 
-    // Lógica NFC-e de Categoria
+    this.setupReactivity();
+  }
+
+  private setupReactivity() {
+    this.form.get('entryMethod')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(method => {
+      const valorCtrl = this.form.get('valor');
+      if (method === 'manual') {
+        valorCtrl?.disable();
+        if (this.itens.length === 0) {
+          this.addItem();
+        }
+      } else {
+        valorCtrl?.enable();
+        this.itens.clear();
+        this.filteredProducts = [];
+        
+        if (method === 'qrcode') {
+          this.iniciarScanner();
+        }
+      }
+    });
+
+    this.itens.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(itemsValue => {
+      if (this.form.get('entryMethod')?.value === 'manual') {
+        const sum = itemsValue.reduce((acc: number, item: any) => acc + ((item.quantidade || 0) * (item.valorUnitarioBruto || 0)), 0);
+        this.form.get('valor')?.setValue(sum, { emitEvent: false });
+      }
+    });
+
     this.form.get('categoria')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(cat => {
       if (cat) {
         this.subcategoriasFiltradas = this.subcategorias.filter(s => s.categoria.id === cat.id);
-        
-        // Ativar flag NFC-e se for categoria compativel
-        if (/mercado|farmácia|farmacia|padaria/i.test(cat.nome)) {
+        if (cat.permiteDetalhamento) {
           this.podeSerNfce = true;
         } else {
           this.podeSerNfce = false;
-          this.form.get('isNfce')?.setValue(false);
+          this.resetarMetodoDeEntrada();
         }
-
+        
+        if (this.subcategoriasFiltradas.length > 0) {
+          this.form.get('subcategoria')?.setValue(this.subcategoriasFiltradas[0]);
+        } else {
+          this.form.get('subcategoria')?.setValue(null);
+        }
       } else {
         this.subcategoriasFiltradas = [];
         this.podeSerNfce = false;
-        this.form.get('isNfce')?.setValue(false);
-      }
-      this.form.get('subcategoria')?.setValue(null);
-    });
-
-    // Lógica quando ativa NFC-e
-    this.form.get('isNfce')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(isNfce => {
-      if (isNfce) {
-        this.form.get('descricao')?.disable();
-        this.form.get('valor')?.disable();
-      } else {
-        this.form.get('descricao')?.enable();
-        this.form.get('valor')?.enable();
+        this.resetarMetodoDeEntrada();
+        this.form.get('subcategoria')?.setValue(null);
       }
     });
 
@@ -171,9 +201,18 @@ export class LancamentoModalComponent implements OnInit {
       }
     });
 
+    this.form.get('dataLancamento')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
+      if (data) {
+        this.form.get('dataVencimento')?.setValue(data);
+      }
+    });
+
     this.form.get('status')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       if (status === StatusLancamento.EFETIVADO) {
         this.form.get('dataEfetivacao')?.setValidators(Validators.required);
+        if (!this.form.get('dataEfetivacao')?.value) {
+          this.form.get('dataEfetivacao')?.setValue(this.form.get('dataLancamento')?.value);
+        }
       } else {
         this.form.get('dataEfetivacao')?.clearValidators();
       }
@@ -208,6 +247,58 @@ export class LancamentoModalComponent implements OnInit {
     });
   }
 
+  private resetarMetodoDeEntrada(): void {
+    if (this.form.get('entryMethod')?.value !== 'simples') {
+      this.form.get('entryMethod')?.setValue('simples');
+    }
+  }
+
+  addItem() {
+    const itemGroup = this.fb.group({
+      produtoNome: ['', Validators.required],
+      produtoId: [null],
+      quantidade: [1, [Validators.required, Validators.min(1)]],
+      valorUnitarioBruto: [0, [Validators.required, Validators.min(0)]],
+      valorTotalBruto: [{value: 0, disabled: true}]
+    });
+
+    const index = this.itens.length;
+    this.itens.push(itemGroup);
+    this.filteredProducts.push([]);
+
+    itemGroup.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(val => {
+      const totalItem = (val.quantidade || 0) * (val.valorUnitarioBruto || 0);
+      itemGroup.get('valorTotalBruto')?.setValue(totalItem, { emitEvent: false });
+    });
+
+    itemGroup.get('produtoNome')?.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(term => {
+        if (!term || term.length < 2) return of([]);
+        return this.produtoService.search(term);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(results => {
+      this.filteredProducts[index] = results;
+    });
+  }
+
+  removeItem(index: number) {
+    this.itens.removeAt(index);
+    this.filteredProducts.splice(index, 1);
+  }
+
+  selectProduct(index: number, produto: ProdutoResponseDTO) {
+    const itemGroup = this.itens.at(index) as FormGroup;
+    itemGroup.patchValue({
+      produtoNome: produto.nome,
+      produtoId: produto.id,
+      valorUnitarioBruto: 0 
+    });
+    this.filteredProducts[index] = [];
+  }
+
   carregarDadosBase() {
     const requisicoes: any = {
       contas: this.contaService.listarTodos()
@@ -225,7 +316,6 @@ export class LancamentoModalComponent implements OnInit {
     forkJoin(requisicoes)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((res: any) => {
-        // Tratar Contas
         this.contas = res.contas;
         if (this.lancamentoAtual?.conta) {
           this.form.get('conta')?.setValue(this.contas.find((c: Conta) => c.id === this.lancamentoAtual!.conta!.id) || null);
@@ -240,7 +330,6 @@ export class LancamentoModalComponent implements OnInit {
           this.form.get('contaDestino')?.setValue(this.contas.find((c: Conta) => c.id === this.lancamentoAtual!.contaDestino!.id) || null);
         }
 
-        // Tratar Cartões
         if (res.cartoes) {
           this.cartoes = res.cartoes;
           if (this.lancamentoAtual?.cartaoCredito) {
@@ -248,18 +337,17 @@ export class LancamentoModalComponent implements OnInit {
           }
         }
 
-        // Tratar Categorias e Subcategorias
         if (res.categorias && res.subcategorias) {
           this.categorias = res.categorias;
+          this.subcategorias = res.subcategorias;
+
           if (this.lancamentoAtual?.categoria) {
             this.form.get('categoria')?.setValue(this.categorias.find((c: Categoria) => c.id === this.lancamentoAtual!.categoria!.id) || null);
           }
 
-          this.subcategorias = res.subcategorias;
           if (this.lancamentoAtual?.subcategoria) {
             const sub = this.subcategorias.find((s: Subcategoria) => s.id === this.lancamentoAtual!.subcategoria!.id);
             if (sub) {
-              this.subcategoriasFiltradas = this.subcategorias.filter((s: Subcategoria) => s.categoria.id === sub.categoria.id);
               this.form.get('subcategoria')?.setValue(sub);
             }
           }
@@ -281,9 +369,8 @@ export class LancamentoModalComponent implements OnInit {
 
   fecharScanner() {
     this.mostrarScanner = false;
-    // Se fechou sem resultado e a flag estava marcada, desmarca para restaurar o formulário
-    if (!this.previewNfceData) {
-      this.form.get('isNfce')?.setValue(false);
+    if (!this.previewNfceData && this.form.get('entryMethod')?.value === 'qrcode') {
+      this.form.get('entryMethod')?.setValue('simples', { emitEvent: false });
     }
   }
 
@@ -307,6 +394,7 @@ export class LancamentoModalComponent implements OnInit {
       catchError(err => {
         console.error(err);
         this.snackBar.open('Erro ao processar a Nota Fiscal. Tente novamente ou use o lançamento manual.', 'Fechar', { duration: 5000 });
+        this.form.get('entryMethod')?.setValue('simples', { emitEvent: false });
         return of(null);
       })
     ).subscribe(preview => {
@@ -320,6 +408,7 @@ export class LancamentoModalComponent implements OnInit {
   cancelarNfce() {
     this.mostrarResumoNfce = false;
     this.previewNfceData = null;
+    this.form.get('entryMethod')?.setValue('simples', { emitEvent: false });
   }
 
   confirmarNfceEfetivacao(lancamentoValidado: LancamentoResponseDTO) {
@@ -341,8 +430,8 @@ export class LancamentoModalComponent implements OnInit {
 
     const lancamentoEfetivar: NfceEfetivarRequestDTO = {
       tipo: this.tipo,
-      descricao: lancamentoValidado.descricao, // Usar do preview
-      valor: lancamentoValidado.valor, // Usar do preview
+      descricao: lancamentoValidado.descricao,
+      valor: lancamentoValidado.valor,
       contaId: values.conta?.id,
       contaDestinoId: null,
       cartaoCreditoId: this.tipo === TipoLancamento.DESPESA ? values.cartaoCredito?.id : null,
@@ -358,7 +447,6 @@ export class LancamentoModalComponent implements OnInit {
       tipoRecorrencia: values.tipoRecorrencia,
       totalParcelas: values.tipoRecorrencia === TipoRecorrencia.PARCELADO ? values.totalParcelas : null,
       status: values.status,
-      // NFC-e extra data
       valorBruto: (lancamentoValidado as any).valorBruto,
       valorDesconto: (lancamentoValidado as any).valorDesconto,
       chaveNfce: (lancamentoValidado as any).chaveNfce,
@@ -424,7 +512,7 @@ export class LancamentoModalComponent implements OnInit {
       }
     }
 
-    const lancamento: LancamentoRequestDTO = {
+    let requestPayload: any = {
       tipo: this.tipo,
       descricao: values.descricao,
       valor: values.valor,
@@ -445,9 +533,18 @@ export class LancamentoModalComponent implements OnInit {
       status: values.status
     };
 
-    const request$: import('rxjs').Observable<any> = this.lancamentoAtual?.id 
-      ? this.lancamentoService.atualizar(this.lancamentoAtual.id, lancamento)
-      : this.lancamentoService.criar(lancamento);
+    if (values.entryMethod === 'manual' && values.itens && values.itens.length > 0) {
+      requestPayload.itens = values.itens.map((i: any) => ({
+        produto: { id: i.produtoId, nome: i.produtoNome },
+        quantidade: i.quantidade,
+        valorUnitarioBruto: i.valorUnitarioBruto,
+        valorTotalBruto: (i.quantidade || 0) * (i.valorUnitarioBruto || 0)
+      }));
+    }
+
+    const request$: Observable<any> = this.lancamentoAtual?.id 
+      ? this.lancamentoService.atualizar(this.lancamentoAtual.id, requestPayload)
+      : this.lancamentoService.criar(requestPayload);
 
     request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
