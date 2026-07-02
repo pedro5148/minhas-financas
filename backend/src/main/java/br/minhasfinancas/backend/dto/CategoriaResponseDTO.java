@@ -6,4 +6,5 @@ import lombok.Data;
 public class CategoriaResponseDTO {
     private Long id;
     private String nome;
+    private Boolean permiteDetalhamento;
 }

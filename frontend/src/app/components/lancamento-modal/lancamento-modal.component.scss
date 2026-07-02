@@ -59,3 +59,175 @@
     cursor: not-allowed;
   }
 }
+/* Estilos para Radio Cards */
+.entry-method-section {
+  margin-top: 24px;
+  margin-bottom: 24px;
+  
+  .section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+
+  .radio-cards {
+    display: flex;
+    gap: 12px;
+    
+    .radio-card {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      background-color: var(--bg-secondary);
+
+      &:hover {
+        background-color: var(--bg-hover);
+      }
+
+      &.selected {
+        border-color: var(--accent-color);
+        background-color: rgba(15, 118, 110, 0.05); /* Usar cor base do teal (se aplicável) */
+      }
+
+      input[type="radio"] {
+        display: none;
+      }
+
+      span {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+    }
+    
+    @media (max-width: 600px) {
+      flex-direction: column;
+    }
+  }
+}
+
+/* Lançamento Manual (FormArray) */
+.manual-items-container {
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  background-color: var(--bg-primary);
+
+  .items-header h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+  }
+
+  .items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    
+    .form-group {
+      margin-bottom: 0;
+    }
+
+    .small-field {
+      width: 80px;
+    }
+
+    .medium-field {
+      width: 140px;
+    }
+    
+    .action-col {
+      width: 40px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .autocomplete-wrapper {
+      flex: 1;
+      position: relative;
+      
+      .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        list-style: none;
+        padding: 0;
+        margin: 4px 0 0 0;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 100;
+        
+        li {
+          padding: 10px 12px;
+          cursor: pointer;
+          border-bottom: 1px solid var(--border-color);
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          &:hover {
+            background-color: var(--bg-hover);
+          }
+        }
+      }
+    }
+
+    .disabled-input {
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 4px;
+      transition: background 0.2s;
+      
+      &:hover {
+        background: #fee2e2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      flex-wrap: wrap;
+      
+      .autocomplete-wrapper {
+        flex: 100%;
+      }
+      .small-field, .medium-field {
+        flex: 1;
+      }
+      .action-col {
+        width: auto;
+      }
+    }
+  }
+
+  .btn-add-item {
+    margin-top: 16px;
+  }
+}

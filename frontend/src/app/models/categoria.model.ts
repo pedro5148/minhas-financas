@@ -1,10 +1,12 @@
 export interface Categoria {
   id?: number;
   nome: string;
+  permiteDetalhamento: boolean;
 }
 
 export interface CategoriaRequestDTO {
   nome: string;
+  permiteDetalhamento?: boolean;
 }
 
 export interface Subcategoria {

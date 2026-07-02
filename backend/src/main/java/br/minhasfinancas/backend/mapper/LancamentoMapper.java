@@ -22,6 +22,7 @@ public interface LancamentoMapper {
     @Mapping(target = "subcategoria.id", source = "subcategoriaId")
     @Mapping(target = "fatura.id", source = "faturaId")
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "chaveNfce", ignore = true)
     @Mapping(target = "lancamentoParcelado", ignore = true)
     @Mapping(target = "valorBruto", ignore = true)
     @Mapping(target = "valorDesconto", ignore = true)

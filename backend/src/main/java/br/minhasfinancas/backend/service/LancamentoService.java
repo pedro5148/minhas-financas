@@ -38,7 +38,8 @@ public class LancamentoService {
     public LancamentoService(LancamentoRepository repository, FaturaService faturaService,
             ContaRepository contaRepository,
             CategoriaRepository categoriaRepository,
-            SubcategoriaRepository subcategoriaRepository, LancamentoMapper mapper,
+            SubcategoriaRepository subcategoriaRepository,
+            LancamentoMapper mapper,
             List<LancamentoStrategy> strategies) {
         this.repository = repository;
         this.faturaService = faturaService;
@@ -57,20 +58,20 @@ public class LancamentoService {
         Specification<Lancamento> spec = LancamentoSpecification
                 .filtroAvancado(descricao, tipo, mes, ano);
         Page<Lancamento> paginasEntidade = repository.findAll(spec, pageable);
-        return paginasEntidade.map(l -> mapper.toResponseDTO(l));
+        return paginasEntidade.map(mapper::toResponseDTO);
     }
 
     public List<LancamentoResponseDTO> listarPorMesAno(int mes, int ano) {
         LocalDate inicioMes = LocalDate.of(ano, mes, 1);
         LocalDate fimMes = inicioMes.withDayOfMonth(inicioMes.lengthOfMonth());
         return repository.findByMesAnoVencimento(inicioMes, fimMes).stream()
-                .map(l -> mapper.toResponseDTO(l))
+                .map(mapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     public List<LancamentoResponseDTO> listarPorFatura(Long faturaId) {
         return repository.findByFaturaId(faturaId).stream()
-                .map(l -> mapper.toResponseDTO(l))
+                .map(mapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -89,15 +90,15 @@ public class LancamentoService {
             return new ArrayList<>();
         }
 
-        LocalDate minDate = lote.stream().map(d -> d.getDataLancamento()).min((d1, d2) -> d1.compareTo(d2))
+        LocalDate minDate = lote.stream().map(LancamentoRequestDTO::getDataLancamento).min(LocalDate::compareTo)
                 .orElse(LocalDate.now());
-        LocalDate maxDate = lote.stream().map(d -> d.getDataLancamento()).max((d1, d2) -> d1.compareTo(d2))
+        LocalDate maxDate = lote.stream().map(LancamentoRequestDTO::getDataLancamento).max(LocalDate::compareTo)
                 .orElse(LocalDate.now());
 
         List<Lancamento> existentes = repository.findByDataLancamentoBetween(minDate, maxDate);
 
         Set<String> assinaturasExistentes = existentes.stream()
-                .map(l -> this.gerarAssinatura(l))
+                .map(this::gerarAssinatura)
                 .collect(Collectors.toSet());
 
         List<Lancamento> lancamentosParaSalvar = new ArrayList<>();
@@ -123,7 +124,7 @@ public class LancamentoService {
             }
         }
 
-        return salvos.stream().map(l -> mapper.toResponseDTO(l)).collect(Collectors.toList());
+        return salvos.stream().map(mapper::toResponseDTO).collect(Collectors.toList());
     }
 
     private String gerarAssinatura(Lancamento l) {

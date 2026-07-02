@@ -7,16 +7,31 @@
       <table class="b2b-table">
         <thead>
           <tr>
-            <th>Descrição</th>
-            <th>Data</th>
+            <th (click)="sortBy('descricao')" class="sortable-header">
+              Descrição
+              <mat-icon *ngIf="sortColumn === 'descricao'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
+            <th (click)="sortBy('dataLancamento')" class="sortable-header">
+              Data
+              <mat-icon *ngIf="sortColumn === 'dataLancamento'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
             <th>Cartão?</th>
-            <th>Valor</th>
+            <th (click)="sortBy('valor')" class="sortable-header">
+              Valor
+              <mat-icon *ngIf="sortColumn === 'valor'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
             <th style="width: 50px;">Ações</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let l of lancamentos" (click)="onRowClick(l)" style="cursor: pointer;" class="clickable-row">
-            <td><strong class="item-title">{{ l.descricao }}</strong></td>
+          <tr *ngFor="let l of sortedLancamentos" (click)="onRowClick(l)" style="cursor: pointer;" class="clickable-row">
+            <td>
+              <div class="descricao-wrapper">
+                <mat-icon *ngIf="l.status === 'EFETIVADO'" class="status-icon efetivado" matTooltip="Efetivado">check_circle</mat-icon>
+                <mat-icon *ngIf="l.status !== 'EFETIVADO'" class="status-icon pendente" matTooltip="Pendente">schedule</mat-icon>
+                <strong class="item-title">{{ l.descricao }}</strong>
+              </div>
+            </td>
             <td>{{ l.dataLancamento | date:'dd/MM/yyyy' }}</td>
             <td>
               <span *ngIf="l.cartaoCredito" class="badge" style="background-color: #6366f1; color: white;">Sim</span>
@@ -33,7 +48,7 @@
               </button>
             </td>
           </tr>
-          <tr *ngIf="lancamentos.length === 0">
+          <tr *ngIf="sortedLancamentos.length === 0">
             <td colspan="5" class="empty-state">Nenhum lançamento no período</td>
           </tr>
         </tbody>
